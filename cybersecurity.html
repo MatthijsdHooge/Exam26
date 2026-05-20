@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔐 Cybersecurity Intro — AP Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07080b;--panel:#0d0f14;--panel2:#141720;
+  --border:#1a1f2e;--border2:#242b3d;
+  --text:#dde3f0;--muted:#4a5568;--muted2:#6b7280;
+  --c:#00d4ff;--correct:#22c55e;--wrong:#ef4444;--amber:#ffb800;--purple:#a855f7;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(0,212,255,.05),transparent);pointer-events:none;z-index:0}
+.wrap{max-width:860px;margin:0 auto;padding:28px 20px 80px;position:relative;z-index:1}
+
+/* topbar */
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:28px;flex-wrap:wrap}
+.back{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted2);background:transparent;border:1px solid var(--border2);padding:7px 14px;border-radius:4px;cursor:pointer;text-decoration:none;transition:all .15s;display:inline-block}
+.back:hover{border-color:var(--muted);color:var(--text)}
+.topic-pill{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--c);border:1px solid;border-color:color-mix(in srgb,var(--c) 40%,transparent);background:color-mix(in srgb,var(--c) 8%,transparent);padding:5px 14px;border-radius:3px;margin-left:auto}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--border);border-radius:7px;overflow:hidden;background:var(--panel);margin-bottom:16px}
+.stat{text-align:center;padding:12px 0;border-right:1px solid var(--border)}
+.stat:last-child{border-right:none}
+.sv{font-family:'IBM Plex Mono',monospace;font-size:1.3rem;font-weight:700;line-height:1;display:block}
+.sl{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-top:3px;display:block}
+.prog-wrap{height:3px;background:var(--border);border-radius:2px;margin-bottom:5px;overflow:hidden}
+.prog{height:100%;background:linear-gradient(90deg,var(--c),color-mix(in srgb,var(--c) 70%,#fff));transition:width .5s ease;width:0;border-radius:2px}
+.prog-txt{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-align:right;margin-bottom:20px}
+
+/* card */
+.q-card{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:32px 36px;margin-bottom:18px;animation:up .3s ease}
+@keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.q-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+.q-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--c);background:color-mix(in srgb,var(--c) 8%,transparent);border:1px solid color-mix(in srgb,var(--c) 25%,transparent);padding:3px 10px;border-radius:2px}
+.q-sub{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted2);background:var(--panel2);border:1px solid var(--border);padding:3px 10px;border-radius:2px}
+.q-tbadge{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px}
+.tb-multi{color:var(--amber);background:rgba(255,184,0,.07);border:1px solid rgba(255,184,0,.2)}
+.tb-open{color:var(--purple);background:rgba(168,85,247,.07);border:1px solid rgba(168,85,247,.2)}
+.q-text{font-size:1.02rem;font-weight:500;line-height:1.65;margin-bottom:22px}
+
+/* options */
+.opts{display:flex;flex-direction:column;gap:9px}
+.opt{display:flex;align-items:flex-start;gap:13px;padding:12px 16px;border:1px solid var(--border);border-radius:5px;cursor:pointer;transition:border-color .12s,background .12s;background:var(--bg);user-select:none}
+.opt:hover:not(.locked){border-color:var(--c);background:color-mix(in srgb,var(--c) 4%,transparent)}
+.opt.sel{border-color:var(--c);background:color-mix(in srgb,var(--c) 7%,transparent)}
+.opt.ok{border-color:var(--correct);background:rgba(34,197,94,.07)}
+.opt.bad{border-color:var(--wrong);background:rgba(239,68,68,.07)}
+.opt.missed{border-color:var(--amber);background:rgba(255,184,0,.06)}
+.opt-box{width:18px;height:18px;flex-shrink:0;margin-top:2px;border:2px solid var(--border2);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;transition:all .12s}
+.opt.sel .opt-box{border-color:var(--c);background:var(--c);color:var(--bg)}
+.opt.ok .opt-box{border-color:var(--correct);background:var(--correct);color:#fff}
+.opt.bad .opt-box{border-color:var(--wrong);background:var(--wrong);color:#fff}
+.opt.missed .opt-box{border-color:var(--amber);background:var(--amber);color:#000}
+.opt-letter{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:3px;flex-shrink:0}
+.opt-text{font-size:.92rem;line-height:1.5}
+
+/* open */
+.open-inp{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:12px 16px;font-family:'IBM Plex Sans',sans-serif;font-size:.95rem;resize:none;transition:border-color .15s;margin-top:4px}
+.open-inp:focus{outline:none;border-color:var(--c)}
+.open-inp.ok{border-color:var(--correct);background:rgba(34,197,94,.07)}
+.open-inp.bad{border-color:var(--wrong);background:rgba(239,68,68,.07)}
+
+/* hint */
+.hint-btn{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--amber);background:rgba(255,184,0,.07);border:1px solid rgba(255,184,0,.2);padding:6px 14px;border-radius:4px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px;margin-top:16px}
+.hint-btn:hover{background:rgba(255,184,0,.13)}
+.hint-box{margin-top:10px;padding:12px 16px;background:rgba(255,184,0,.06);border:1px solid rgba(255,184,0,.2);border-radius:5px;font-size:.88rem;line-height:1.6;color:var(--amber);display:none;animation:up .2s ease}
+.hint-box.show{display:block}
+
+/* feedback */
+.feedback{margin-top:18px;padding:13px 18px;border-radius:5px;font-size:.88rem;line-height:1.6;display:none;animation:up .2s ease}
+.feedback.show{display:block}
+.fb-ok{background:rgba(34,197,94,.09);border:1px solid rgba(34,197,94,.3)}
+.fb-bad{background:rgba(239,68,68,.09);border:1px solid rgba(239,68,68,.3)}
+
+/* btns */
+.btn-row{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+.btn{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:1px;text-transform:uppercase;padding:10px 22px;border-radius:4px;cursor:pointer;border:none;transition:all .15s}
+.btn-check{background:var(--c);color:#07080b;font-weight:700}
+.btn-check:hover:not(:disabled){filter:brightness(1.15);transform:translateY(-1px)}
+.btn-check:disabled{background:var(--border);color:var(--muted);cursor:not-allowed;transform:none}
+.btn-next{background:transparent;color:var(--c);border:1px solid var(--c)}
+.btn-next:hover{background:color-mix(in srgb,var(--c) 8%,transparent)}
+.btn-skip{background:transparent;color:var(--muted2);border:1px solid var(--border2)}
+.btn-skip:hover{border-color:var(--muted);color:var(--text)}
+.hidden{display:none!important}
+
+/* score */
+#score-screen{display:none;text-align:center;padding:60px 24px 100px;max-width:680px;margin:0 auto;position:relative;z-index:1}
+.sc-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:4px;text-transform:uppercase;color:var(--c);border:1px solid color-mix(in srgb,var(--c) 30%,transparent);padding:5px 16px;border-radius:2px;display:inline-block;margin-bottom:20px}
+.sc-pct{font-family:'IBM Plex Mono',monospace;font-size:clamp(4rem,12vw,7rem);font-weight:700;line-height:1;margin:16px 0;color:var(--c)}
+.sc-msg{font-size:1.05rem;color:var(--muted2);margin:12px 0 32px}
+.sc-grid{display:flex;justify-content:center;gap:40px;flex-wrap:wrap;margin:24px 0 40px}
+.sc-item{text-align:center}
+.sc-num{font-family:'IBM Plex Mono',monospace;font-size:2rem;font-weight:700;display:block}
+.sc-lbl{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-top:3px;display:block}
+.sc-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn-home{font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:1px;text-transform:uppercase;padding:13px 32px;border-radius:4px;cursor:pointer;font-weight:700;transition:all .15s;background:transparent;color:var(--c);border:1px solid var(--c);text-decoration:none;display:inline-block}
+.btn-home:hover{background:color-mix(in srgb,var(--c) 8%,transparent)}
+.btn-retry{font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:1px;text-transform:uppercase;padding:13px 32px;border-radius:4px;cursor:pointer;font-weight:700;transition:all .15s;border:none;background:var(--c);color:#07080b}
+.btn-retry:hover{filter:brightness(1.15);transform:translateY(-1px)}
+
+@media(max-width:600px){
+  .q-card{padding:20px 18px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .stat:nth-child(2){border-right:none}
+  .stat:nth-child(3){border-right:1px solid var(--border)}
+}
+</style>
+</head>
+<body>
+
+<div id="quiz-screen" class="wrap">
+  <div class="topbar">
+    <a class="back" href="index.html">← Terug</a>
+    <span class="topic-pill">🔐 Cybersecurity Intro</span>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><span class="sv" id="sv-score" style="color:var(--correct)">0</span><span class="sl">Correct</span></div>
+    <div class="stat"><span class="sv" id="sv-wrong" style="color:var(--wrong)">0</span><span class="sl">Fout</span></div>
+    <div class="stat"><span class="sv" id="sv-left" style="color:var(--c)">—</span><span class="sl">Resterend</span></div>
+    <div class="stat"><span class="sv" id="sv-pct" style="color:#a855f7">—</span><span class="sl">Score %</span></div>
+  </div>
+  <div class="prog-wrap"><div class="prog" id="prog"></div></div>
+  <div class="prog-txt" id="prog-txt">Vraag 1 / —</div>
+
+  <div id="q-container"></div>
+
+  <div class="btn-row">
+    <button class="btn btn-skip" id="btn-skip" onclick="skipQ()">Sla over</button>
+    <button class="btn btn-check" id="btn-check" disabled onclick="check()">Controleer</button>
+    <button class="btn btn-next hidden" id="btn-next" onclick="nextQ()">Volgende →</button>
+  </div>
+</div>
+
+<div id="score-screen"></div>
+
+<script>
+window.QUESTIONS_cybersecurity = [
+  {
+    type: "open",
+    t: "Les 1",
+    q: "1. Leg uit wat Cybersecurity inhoudt en waarom het belangrijk is als student SNB/IOT om hiervoor te leren.",
+    ans: ["beveiliging", "cia", "iot", "netwerk", "beschermen", "privacy", "data"],
+    h: "Denk aan de bescherming van netwerken, systemen en IoT-apparaten tegen ongeoorloofde toegang en het waarborgen van continuïteit."
+  },
+  {
+    type: "open",
+    t: "Les 1",
+    q: "2. Waarom is het onderwijs een interessant doelwit voor cyberaanvallen? Geef minstens drie redenen.",
+    ans: ["data", "persoonsgegevens", "onderzoek", "legacy", "bewustwording", "geld", "financieel"],
+    h: "Denk aan de grote hoeveelheid persoonsgegevens, waardevol intellectueel eigendom (onderzoek) en de vaak beperkte security-budgetten of lagere bewustwording bij gebruikers."
+  },
+  {
+    type: "open",
+    t: "Les 1",
+    q: "3. Wat wordt bedoeld met \"de identiteit van de gebruiker is de nieuwe perimeter\" in moderne cybersecurity?",
+    ans: ["perimeter", "cloud", "identiteit", "mfa", "zero trust", "netwerkgrens"],
+    h: "Nu data in de cloud staat en mensen overal werken, is er geen traditionele fysieke netwerkgrens meer; wie je bent bepaalt de toegang."
+  },
+  {
+    type: "open",
+    t: "Les 1",
+    q: "4. Waarom is het belangrijk om op de hoogte te blijven van actuele cyberdreigingen? Noem een betrouwbare informatiebron.",
+    ans: ["cisa", "ccb", "ncsc", "threat intelligence", "zeroday", "kwetsbaarheden"],
+    h: "Dreigingen veranderen dagelijks. Betrouwbare bronnen zijn o.a. het CCB (Centrum voor Cybersecurity België), NCSC of CISA."
+  },
+  {
+    type: "open",
+    t: "Les 1",
+    q: "5. Leg het CIA-model uit en geef bij elk onderdeel een concreet voorbeeld.",
+    ans: ["confidentiality", "integrity", "availability", "vertrouwelijkheid", "integriteit", "beschikbaarheid"],
+    h: "De drie letters staan voor Vertrouwelijkheid (geheimhouding), Integriteit (juistheid/onveranderd) en Beschikbaarheid (bereikbaarheid)."
+  },
+  {
+    type: "open",
+    t: "Les 1",
+    q: "6. Leg uit wat er bedoeld wordt met de stelling \"een cyberaanval hoeft niet altijd een technische impact te hebben\". Geef minstens 3 voorbeelden.",
+    ans: ["reputatie", "financieel", "reputatieschade", "vertrouwen", "operationeel", "juridisch", "boete"],
+    h: "Denk aan reputatieschade, financiële verliezen door stilstand, juridische stappen of GDPR-boetes."
+  },
+  {
+    type: "open",
+    t: "Les 2",
+    q: "7. Wat is the GDPR (AVG) en waarom werd deze wet op Europees niveau ingevoerd?",
+    ans: ["privacy", "verordening", "persoonsgegevens", "europa", "bescherming", "rechten"],
+    h: "De Algemene Verordening Gegevensbescherming harmoniseert de privacywetgeving binnen de EU en beschermt de grondrechten van burgers omtrent hun data."
+  },
+  {
+    type: "open",
+    t: "Les 2",
+    q: "8. Leg uit aan de hand van voorbeelden op wie de GDPR van toepassing is.",
+    ans: ["organisaties", "bedrijven", "eu", "burgers", "verwerking", "klanten"],
+    h: "De wet geldt voor alle organisaties die persoonsgegevens van EU-burgers verwerken, ongeacht waar het bedrijf ter wereld gevestigd is."
+  },
+  {
+    type: "open",
+    t: "Les 2",
+    q: "9. Leg het verschil uit tussen een betrokkene, een verwerkingsverantwoordelijke en een verwerker in het kader van GDPR.",
+    ans: ["betrokkene", "verantwoordelijke", "verwerker", "doel", "middelen"],
+    h: "De betrokkene is het individu. De verantwoordelijke bepaalt het doel en de middelen van de verwerking; de verwerker voert dit uit in opdracht."
+  },
+  {
+    type: "open",
+    t: "Les 2",
+    q: "10. Wat zijn persoonsgegevens volgens de GDPR? Geef drie voorbeelden van gewone en bijzondere persoonsgegevens.",
+    ans: ["naam", "email", "medisch", "gezondheid", "biometrisch", "religie", "politiek"],
+    h: "Gewone data: e-mail, naam, IP-adres. Bijzondere data: medische gegevens, politieke voorkeur, biometrische identificatie."
+  },
+  {
+    type: "open",
+    t: "Les 2",
+    q: "11. Welke rechten heeft een betrokkene volgens de GDPR? Beschrijf er vier.",
+    ans: ["inzage", "vergetelheid", "wissing", "correctie", "overdraagbaarheid", "beperking", "rectificatie"],
+    h: "Denk aan recht op inzage, recht op rectificatie, recht op gegevenswissing (vergetelheid) en recht op dataportabiliteit."
+  },
+  {
+    type: "open",
+    t: "Les 2",
+    q: "12. Wat is OSINT en hoe kan dit worden misbruikt bij een cyberaanval?",
+    ans: ["open source intelligence", "openbare bronnen", "social engineering", "phishing", "reconnaissance", "reconn"],
+    h: "Open Source Intelligence gebruikt openbare informatie (LinkedIn, social media, DNS) om gerichte social engineering en phishing voor te bereiden."
+  },
+  {
+    type: "open",
+    t: "Les 2",
+    q: "13. Een hacker verzamelt via Shodan en HaveIBeenPwned informatie over een organisatie. Welke risico's ontstaan hierdoor en hoe kan GDPR hierdoor worden overtreden?",
+    ans: ["shodan", "haveibeenpwned", "datalek", "wachtwoorden", "kwetsbaarheden", "toegang"],
+    h: "Gelekte wachtwoorden en blootgestelde open poorten/kwetsbaarheden verhogen het risico op ongeoorloofde toegang tot persoonsgegevens."
+  },
+  {
+    type: "open",
+    t: "Les 2",
+    q: "14. Een student ontdekt via OSINT dat zijn geboortedatum, school en sociale media vrij toegankelijk zijn. Hoe beoordeel je dit vanuit de GDPR en wat kan hij ondernemen?",
+    ans: ["privacy-instellingen", "verwijderen", "rechten", "bewustwording", "afschermen"],
+    h: "Informatie die men zelf openbaar maakt valt minder onder strikte GDPR-beperkingen, maar hij kan zijn privacy-instellingen aanscherpen of verzoeken om verwijdering."
+  },
+  {
+    type: "open",
+    t: "Les 2",
+    q: "15. Stel: je organiseert een infosessie over GDPR op je school. Welke drie basisprincipes zou je zeker uitleggen?",
+    ans: ["doelbinding", "minimale gegevensverwerking", "transparantie", "opslagbeperking", "integriteit", "rechtmatigheid"],
+    h: "Denk aan principes uit Art. 5 GDPR zoals rechtmatigheid, doelbinding, minimale gegevensverwerking of opslagbeperking."
+  },
+  {
+    type: "open",
+    t: "Les 3",
+    q: "16. Wat is een cybersecurity framework en waarom gebruiken organisaties dit?",
+    ans: ["framework", "structuur", "nist", "best practices", "risicobeheer", "richtlijnen"],
+    h: "Een gestructureerde verzameling van richtlijnen en best practices om de cyberbeveiliging planmatig te beheren, te verbeteren en te meten."
+  },
+  {
+    type: "open",
+    t: "Les 3",
+    q: "17. Wat is het verschil tussen een technisch en een governance framework? Geef van elk een concreet voorbeeld.",
+    ans: ["governance", "technisch", "nist", "cis", "iso27001", "beleid", "controls"],
+    h: "Governance richt zich op beleid, risicobeheer en processen (bijv. ISO 27001); technisch op concrete configuraties en maatregelen (bijv. CIS Controls)."
+  },
+  {
+    type: "open",
+    t: "Les 3",
+    q: "18. Wat is het CyberFundamentals Framework van België en hoe verschilt het van internationale standaarden?",
+    ans: ["ccb", "cyberfundamentals", "kmo", "belgië", "pragmatisch"],
+    h: "Het is een pragmatisch, door het CCB ontwikkeld framework specifiek gericht op Belgische organisaties en KMO's, gebaseerd op NIST/CIS."
+  },
+  {
+    type: "open",
+    t: "Les 3",
+    q: "19. Wat is de 'Cyber Kill Chain' en hoe kan deze worden gebruikt binnen cybersecurity?",
+    ans: ["kill chain", "lockheed martin", "fasen", "reconnaissance", "detectie", "stoppen"],
+    h: "Een model van Lockheed Martin dat de chronologische stappen van een aanval beschrijft, bedoeld om de aanval in elke fase te kunnen detecteren og te stoppen."
+  },
+  {
+    type: "open",
+    t: "Les 3",
+    q: "20. Wat wordt er bedoeld met compliancy binnen cybersecurity? Bespreek aan de hand van voorbeelden.",
+    ans: ["compliance", "wetgeving", "normen", "nis2", "gdpr", "voldoen", "audits"],
+    h: "Het aantoonbaar voldoen aan specifieke wet- en regelgeving, standaarden of contractuele eisen (zoals NIS2, GDPR of PCI-DSS)."
+  },
+  {
+    type: "open",
+    t: "Les 3",
+    q: "21. Wat wordt er bedoeld met security controls? Welke soorten controls bestaan er? Leg uit aan de hand van voorbeelden.",
+    ans: ["preventive", "detective", "corrective", "fysiek", "technisch", "administratief"],
+    h: "Maatregelen om risico's te beheersen. Opgedeeld in fysiek (bijv. slot), technisch (bijv. firewall) en administratief (bijv. wachtwoordbeleid)."
+  },
+  {
+    type: "open",
+    t: "Les 3",
+    q: "22. Wat is het verschil en de link tussen wettelijke verplichting en compliancy in cybersecurity? Geef voorbeelden.",
+    ans: ["wet", "norm", "verplicht", "nis2", "boetes", "audit"],
+    h: "Wettelijke verplichtingen (zoals NIS2) dwingen compliance af. Compliancy is de status van het daadwerkelijk voldoen aan die wet via controls."
+  },
+  {
+    type: "open",
+    t: "Les 3",
+    q: "23. Wat is het MITRE ATT&CK-framework en hoe ondersteunt dit het herkennen van cyberaanvallen?",
+    ans: ["mitre", "tactics", "techniques", "aanvallers", "matrix", "database"],
+    h: "Een wereldwijde database van reële tactieken en technieken van aanvallers om aanvalspatronen te mappen en detectieregels te bouwen."
+  },
+  {
+    type: "open",
+    t: "Les 3",
+    q: "24. Een organisatie ontdekt dat gebruikers zich kunnen aanmelden op servers zonder MFA. Hoe koppel je dit aan een security framework en wat is een mogelijke mitigatie?",
+    ans: ["identity", "protect", "mfa", "mitigatie", "controls", "access control"],
+    h: "Dit valt onder Identity Management / Access Control (NIST Protect / CIS Control 6). De mitigatie is het verplicht instellen van MFA."
+  },
+  {
+    type: "open",
+    t: "Les 3",
+    q: "25. Wat is STRIDE en hoe pas je dit model toe op een mobiele bankapplicatie?",
+    ans: ["spoofing", "tampering", "repudiation", "information", "denial", "elevation", "threat modeling"],
+    h: "Een model voor threat modeling: Spoofing, Tampering, Repudiation, Information disclosure, Denial of service, Elevation of privilege."
+  },
+  {
+    type: "open",
+    t: "Les 4",
+    q: "26. Wat is het verschil tussen symmetrische en asymmetrische encryptie? Geef voor elk een toepassing.",
+    ans: ["symmetrisch", "asymmetrisch", "sleutel", "publiek", "privé", "aes", "rsa", "tls"],
+    h: "Symmetrisch gebruikt één gedeelde sleutel (AES, voor data-at-rest); asymmetrisch een publiek/privé-sleutelpaar (RSA/ECC, voor key exchange of handtekeningen)."
+  },
+  {
+    type: "open",
+    t: "Les 4",
+    q: "27. Wat is een hashfunctie? Waarvoor wordt ze gebruikt en waarom is ze belangrijk in digitale handtekeningen?",
+    ans: ["hash", "integriteit", "onerechte", "sha256", "handtekening", "onveranderd"],
+    h: "Een eenrichtingsfunctie die data omzet in een vaste unieke string. Garandeert integriteit; bij handtekeningen bewijst het dat de inhoud ongewijzigd is."
+  },
+  {
+    type: "open",
+    t: "Les 4",
+    q: "28. Wat is het verschil tussen een digitale handtekening en een MAC (Message Authentication Code)?",
+    ans: ["mac", "digitale handtekening", "asymmetrisch", "symmetrisch", "non-repudiation", "onloochenbaarheid"],
+    h: "Een MAC gebruikt een gedeelde symmetrische sleutel; een digitale handtekening gebruikt asymmetrische cryptografie en biedt onloochenbaarheid."
+  },
+  {
+    type: "open",
+    t: "Les 4",
+    q: "29. Wat gebeurt er wanneer je een tekst hasht en vervolgens één teken wijzigt? Waarom is dit belangrijk?",
+    ans: ["avalanche", "lawine-effect", "totaal anders", "wijziging", "integriteit"],
+    h: "Het lawine-effect (avalanche effect) treedt op: de resulterende hash is compleet onherkenbaar anders, wat integriteitsschendingen direct blootlegt."
+  },
+  {
+    type: "open",
+    t: "Les 4",
+    q: "30. Waarom wordt ECB (Electronic Codebook) als onveilig beschouwd en welke alternatieven zijn veiliger?",
+    ans: ["ecb", "patronen", "cbc", "gcm", "pinguïn", "identieke"],
+    h: "Identieke plaintextblokken geven identieke ciphertextblokken, waardoor patronen (zoals de bekende ECB pinguïn) zichtbaar blijven. Alternatieven: CBC of GCM."
+  },
+  {
+    type: "open",
+    t: "Les 4",
+    q: "31. Hoe werkt een digitale handtekening in de praktijk? Beschrijf de stappen van ondertekening tot verificatie.",
+    ans: ["private key", "public key", "hashen", "verifiëren", "ondertekenen", "ontsleutelen"],
+    h: "Zender hasht de data en versleutelt de hash met zijn private key. Ontvanger ontsleutelt de hash met de public key van de zender en vergelijkt deze met de zelfberekende hash."
+  },
+  {
+    type: "open",
+    t: "Les 4",
+    q: "32. Wat is de rol van randomness in cryptografie? Geef een voorbeeld van een toepassing en een risico bij slechte randomness.",
+    ans: ["random", "voorspelbaar", "iv", "sleutels", "entropy", "csprng"],
+    h: "Essentieel om sleutels, nonces en IV's onvoorspelbaar te maken. Slechte randomness leidt tot voorspelbare patronen en het kraken van de encryptie."
+  },
+  {
+    type: "open",
+    t: "Les 4",
+    q: "33. Stel: je wil een bestand met gevoelige gegevens veilig verzenden naar je docent. Hoe garandeer je zowel vertrouwelijkheid als integriteit via symmetrische én asymmetrische cryptografie?",
+    ans: ["sessiesleutel", "aes", "public key", "private key", "hashen", "handtekening"],
+    h: "Versleutel het bestand symmetrisch (AES) met een sessiesleutel. Versleutel die sleutel asymmetrisch met de public key van de docent. Voeg een digitale handtekening toe (hashen + eigen private key)."
+  },
+  {
+    type: "open",
+    t: "Les 4",
+    q: "34. Wat is een cipersuite zoals TLS_RSA_WITH_AES_128_CBC_SHA en hoe beoordeel je of deze veilig is?",
+    ans: ["cipher suite", "rsa", "aes", "cbc", "sha", "veiligheid", "forward secrecy"],
+    h: "Het definieert de algoritmes voor sleuteluitwisseling, encryptie en hashing. RSA en CBC (zonder perfect forward secrecy) gelden vandaag als verouderd/onveilig."
+  },
+  {
+    type: "open",
+    t: "Les 4",
+    q: "35. Waarom is een key derivation function belangrijk bij symmetrische encryptie?",
+    ans: ["kdf", "wachtwoord", "sleutel", "pbkdf2", "stretching", "salting"],
+    h: "Het zet een (vaak zwak) menselijk wachtwoord om in een cryptografisch sterke, willekeurig ogende sleutel van de juiste lengte via hashing, salting en stretching."
+  },
+  {
+    type: "open",
+    t: "Les 5",
+    q: "36. Een leerling zegt dat hij \"tussen twee toestellen zit\" en al het netwerkverkeer kan zien. Wat bedoelt hij hiermee en hoe werkt een klassieke Man-in-the-Middle aanval?",
+    ans: ["mitm", "man in the middle", "verkeer", "onderscheppen", "router", "gateway"],
+    h: "De aanvaller dwingt het netwerkverkeer tussen het slachtoffer en de bestemming (gateway) om via zijn eigen machine te lopen om het af te luisteren."
+  },
+  {
+    type: "open",
+    t: "Les 5",
+    q: "37. Leg uit wat het gevaar is van een MITM aanval en welke acties een aanvaller kan uitvoeren na het opzetten van een succesvolle aanval.",
+    ans: ["credentials", "wachtwoorden", "injecteren", "manipuleren", "afluisteren", "hijacking"],
+    h: "Gevaar: diefstal van sessiecookies en credentials, afluisteren van onversleuteld verkeer, of het injecteren van malware/valse scripts."
+  },
+  {
+    type: "open",
+    t: "Les 5",
+    q: "38. Een leerling probeert ARP poisoning uit in een labo. Hoe werkt deze aanval en waarom is ARP zo kwetsbaar? Leg elke stap uit.",
+    ans: ["arp", "poisoning", "mac", "ip", "cache", "stateless", "vervallen", "reply"],
+    h: "ARP is stateless en heeft geen authenticatie. De aanvaller stuurt ongevraagde, valse ARP-replies om IP-adressen aan zijn eigen MAC-adres te mappen in de ARP-cache."
+  },
+  {
+    type: "open",
+    t: "Les 5",
+    q: "39. Tijdens het labo stelt een student een DNS spoofing-aanval in. Hoe werkt DNS spoofing en wat is het risico?",
+    ans: ["dns", "spoofing", "ip-adres", "valse", "omleiden", "phishing"],
+    h: "Het vervalsen van DNS-antwoorden (of DNS cache vervuilen) zodat domeinnamen verwijzen naar een malafide IP-adres, wat leidt tot credential harvesting via phishing-sites."
+  },
+  {
+    type: "open",
+    t: "Les 5",
+    q: "40. Tijdens een les meldt een student dat zijn laptop geen IP-adres meer ontvangt van het netwerk. Je vermoedt een aanval. Wat is DHCP starvation en hoe werkt dit?",
+    ans: ["dhcp", "starvation", "mac-adressen", "pool", "uitputten", "requests"],
+    h: "De aanvaller stuurt een enorme hoeveelheid DHCP-requests met telkens unieke, valse MAC-adressen om alle beschikbare IP-adressen in de DHCP-pool uit te putten."
+  },
+  {
+    type: "open",
+    t: "Les 5",
+    q: "41. Hoe kan je DHCP starvation voorkomen in een schoolnetwerk?",
+    ans: ["port security", "dhcp snooping", "limiteren", "switch"],
+    h: "Activeer DHCP Snooping op de switches (enkel vertrouwde poorten mogen DHCP bieden) en gebruik Port Security om het aantal MAC-adressen per poort te limiteren."
+  },
+  {
+    type: "open",
+    t: "Les 5",
+    q: "42. Je ontdekt dat een toestel op het netwerk zich voordoet als DHCP-server en verkeerde DNS-servers verspreidt. Hoe werkt zo'n rogue DHCP-aanval?",
+    ans: ["rogue", "dhcp", "gateway", "dns", "antwoorden", "sneller"],
+    h: "Een ongeautoriseerde DHCP-server op het netwerk reageert sneller op DHCP-discoveries dan de echte server, en deelt een valse gateway of DNS-server uit om verkeer te kapen."
+  },
+  {
+    type: "open",
+    t: "Les 5",
+    q: "43. Hoe werkt DNSChef en wat is het verschil met DNS spoofing via ARP poisoning?",
+    ans: ["dnschef", "proxy", "arp", "dns", "applicatielaag"],
+    h: "DNSChef is een applicatielaag DNS-proxy/server die specifiek geconfigureerde domeinen vervalst. ARP-poisoning manipuleert laag 2 om al het verkeer te kapen."
+  },
+  {
+    type: "open",
+    t: "Les 6",
+    q: "44. Je wil voorkomen dat gebruikers op phishing sites terechtkomen. Noem minstens vier effectieve maatregelen.",
+    ans: ["awareness", "mfa", "dns-filtering", "spf", "dkim", "dmarc", "fido2"],
+    h: "Denk aan security awareness training, phishing-resistente MFA (FIDO2), mailbeveiliging (SPF/DKIM/DMARC) en endpoint URL-filtering."
+  },
+  {
+    type: "open",
+    t: "Les 6",
+    q: "45. Een student zegt: \"Sterke wachtwoorden volstaan niet tegen phishing.\" Leg uit waarom dit klopt en hoe je inlogprocedures veiliger maakt.",
+    ans: ["phishing", "mfa", "fido2", "onderscheppen", "passkeys"],
+    h: "Een phishing-site steelt een sterk wachtwoord even makkelijk als een zwak wachtwoord. Inloggen maak je veiliger met MFA, idealiter phishing-resistent (zoals FIDO2 of Passkeys)."
+  },
+  {
+    type: "open",
+    t: "Les 6",
+    q: "46. Wat is social engineering en welke technieken worden hierbij gebruikt? Geef minstens 3 voorbeelden.",
+    ans: ["manipulatie", "phishing", "pretexting", "baiting", "tailgating", "psychologisch"],
+    h: "Het psychologisch manipuleren van mensen om vertrouwelijke acties of data te ontfutselen. Voorbeelden: phishing, tailgating (meelopen), baiting, pretexting."
+  },
+  {
+    type: "open",
+    t: "Les 6",
+    q: "47. Wat is de link tussen phishing en GDPR en welke invloed heeft dit op bedrijven?",
+    ans: ["datalek", "boete", "persoonsgegevens", "verlies", "meldplicht"],
+    h: "Succesvolle phishing resulteert vaak in gecompromitteerde accounts of datadiefstal, wat een meldplichtig GDPR-datalek veroorzaakt met risico op boetes."
+  },
+  {
+    type: "open",
+    t: "Les 6",
+    q: "48. Wat is spear phishing? Leg uit aan de hand van een concreet voorbeeld.",
+    ans: ["spear", "gericht", "slachtoffer", "persoonlijk", "ceo-fraude"],
+    h: "Een uiterst gerichte vorm van phishing gericht op een specifiek persoon of rol binnen een bedrijf, gebruikmakend van persoonlijke/relevante context."
+  },
+  {
+    type: "open",
+    t: "Les 6",
+    q: "49. Leg uit hoe het gebruik van AI door het slachtoffer enerzijds en door de aanvaller anderzijds, de effectiviteit van phishing verhoogt.",
+    ans: ["ai", "llm", "taalfouten", "deepfake", "detectie", "automatisering"],
+    h: "Aanvallers gebruiken LLM's voor foutloze, gepersonaliseerde mails en deepfakes. Slachtoffers/verdedigers gebruiken AI voor snelle gedragsanalyse en phishing-detectie."
+  },
+  {
+    type: "open",
+    t: "Les 6",
+    q: "50. Hoe kan je voorkomen dat de AI van het slachtoffer misbruikt worden tijdens phishing aanvallen? Geef minstens 3 maatregelen.",
+    ans: ["prompt injection", "filtering", "training", "isolatie", "dlp"],
+    h: "Denk aan beveiliging tegen prompt-injections, strikte data loss prevention (DLP) regels rond AI-inputs en het niet blindelings vertrouwen op AI-samenvattingen."
+  },
+  {
+    type: "open",
+    t: "Les 7",
+    q: "51. Wat is het verschil tussen identificatie, authenticatie en autorisatie? Geef telkens een concreet voorbeeld.",
+    ans: ["identificatie", "authenticatie", "autorisatie", "gebruikersnaam", "wachtwoord", "rechten"],
+    h: "Identificatie is wie je claimt te zijn (username); authenticatie is het bewijzen hiervan (wachtwoord/biometrie); autorisatie bepaalt wat je mag doen (rechten)."
+  },
+  {
+    type: "open",
+    t: "Les 7",
+    q: "52. Wat is Multi-Factor Authentication (MFA)? Geef een realistisch voorbeeld uit een ziekenhuiscontext.",
+    ans: ["mfa", "factoren", "weten", "hebben", "zijn", "badge", "pincode"],
+    h: "Inloggen met minstens twee verschillende factoren (iets wat je weet, hebt of bent). Voorbeeld: ziekenhuisbadge (hebben) + pincode (weten)."
+  },
+  {
+    type: "open",
+    t: "Les 7",
+    q: "53. Geef een voorbeeld van een zwak wachtwoord en van een sterk wachtwoord. Leg uit waarom dit een zwak of sterk wachtwoord is.",
+    ans: ["lengte", "complexiteit", "wachtwoord123", "passphrase", "entropie", "voorspelbaar"],
+    h: "Zwak: kort en voorspelbaar ('Welkom2026'). Sterk: een lange zin (passphrase) of willekeurige reeks met hoge entropie."
+  },
+  {
+    type: "open",
+    t: "Les 7",
+    q: "54. Wat is het verschil tussen DAC (Discretionary Access Control), MAC (Mandatory Access Control) en RBAC (Role-Based Access Control)? Geef telkens een voorbeeld.",
+    ans: ["dac", "mac", "rbac", "eigenaar", "labels", "rol", "rechten"],
+    h: "DAC: eigenaar bepaalt rechten. MAC: centraal systeem dwingt toegang af via security labels (geheim/top-secret). RBAC: rechten op basis van de functierol."
+  },
+  {
+    type: "open",
+    t: "Les 7",
+    q: "55. Je deelt een document in OneDrive met één collega. Hoe komt het dat een andere collega de link toch kan openen? Hoe vermijd je dit?",
+    ans: ["link", "rechten", "iedereen", "specifieke personen"],
+    h: "De deellink stond waarschijnlijk ingesteld op 'Iedereen met de link'. Je vermijdt dit door specifiek personen te selecteren en te verplichten in te loggen."
+  },
+  {
+    type: "open",
+    t: "Les 7",
+    q: "56. Een student voert een TryHackMe-oefening uit en merkt dat gebruikers hetzelfde wachtwoord hergebruiken. Wat is het risico en hoe voorkom je dit?",
+    ans: ["credential stuffing", "hergebruik", "wachtwoordbeleid", "password manager"],
+    h: "Risico is credential stuffing: lekt één site, dan liggen alle accounts open. Voorkomen via password managers en afdwingen van unieke wachtwoorden."
+  },
+  {
+    type: "open",
+    t: "Les 7",
+    q: "57. Wat is accountability in cybersecurity? Waarom is dit belangrijk, vooral in werkomgevingen met gevoelige data?",
+    ans: ["accountability", "verantwoordelijkheid", "auditing", "logging", "herleiden"],
+    h: "Het onweerlegbaar kunnen herleiden van een actie of mutatie naar één unieke natuurlijke persoon via sluitende auditing en logging."
+  },
+  {
+    type: "open",
+    t: "Les 7",
+    q: "58. Wat is het verschil tussen auditing, logging en monitoring? Geef van elk een korte uitleg en een voorbeeld.",
+    ans: ["logging", "monitoring", "auditing", "vastleggen", "realtime", "controle"],
+    h: "Logging = events registreren in bestanden. Monitoring = realtime status bekijken en alerts genereren. Auditing = achteraf periodiek controleren tegen de norm."
+  },
+  {
+    type: "open",
+    t: "Les 8",
+    q: "59. Wat is het verschil tussen een packet filtering firewall en een applicatie firewall? Wat is het gevolg voor de functionaliteiten van deze firewalls?",
+    ans: ["packet filtering", "applicatie", "layer 3", "layer 7", "inspectie", "poorten"],
+    h: "Packet filtering kijkt enkel naar IP-adressen en poorten (laag 3/4). Een applicatie firewall (WAF / laag 7) begrijpt het protocol (bijv. HTTP) en inspecteert de daadwerkelijke payload."
+  },
+  {
+    type: "open",
+    t: "Les 8",
+    q: "60. Tijdens een netwerkcontrole ontdek je dat studenten vanaf het LAN ongewenste websites zoals hln.be kunnen bezoeken. Hoe stel je dit bij via firewallregels in PFSENSE?",
+    ans: ["pfsense", "regel", "block", "lan", "destination", "alias"],
+    h: "Maak een 'Block' of 'Reject' regel op de LAN-interface interface, waarbij de destination ingesteld staat op het IP of een alias/DNS-naam van de ongewenste site."
+  },
+  {
+    type: "open",
+    t: "Les 8",
+    q: "61. Wat is een DMZ en wanneer wordt deze toegepast? Leg uit aan de hand van minstens 2 voorbeelden.",
+    ans: ["dmz", "demilitarized zone", "webserver", "publiek", "isolatie", "subnet"],
+    h: "Demilitarized Zone: een geïsoleerd subnet voor servers die vanaf het internet bereikbaar moeten zijn (bijv. een openbare webserver of mailserver)."
+  },
+  {
+    type: "open",
+    t: "Les 8",
+    q: "62. Een collega vraagt of jullie firewall 'stateful' is. Hoe leg je dit uit en waarom is dit belangrijk bij pakketinspectie?",
+    ans: ["stateful", "connectie", "tabel", "verkeer", "retourtje", "status"],
+    h: "Een stateful firewall houdt een connectietabel (state table) bij. Retourverkeer van een legitieme, reeds opgezette uitgaande sessie wordt hierdoor automatisch toegestaan."
+  },
+  {
+    type: "open",
+    t: "Les 8",
+    q: "63. Wat is 'defense in depth' en waarom wordt dit toegepast binnen cybersecurity? Leg uit aan de hand van een voorbeeld.",
+    ans: ["defense in depth", "lagen", "firewall", "antivirus", "mfa", "redundantie"],
+    h: "Het hanteren van meerdere, onafhankelijke verdedigingslagen (MFA + Firewall + EDR), zodat het falen van één beveiligingsmaatregel niet leidt tot een volledige inbreuk."
+  },
+  {
+    type: "open",
+    t: "Les 8",
+    q: "64. Wat is een reverse proxy en welke advantages/voordelen biedt deze?",
+    ans: ["reverse proxy", "ssl offloading", "load balancing", "verbergen", "ip"],
+    h: "Een server die verzoeken van buiten opvangt en doorsluist naar interne servers. Voordelen: afschermen interne IP's, load balancing en gecentraliseerde SSL-offloading."
+  },
+  {
+    type: "open",
+    t: "Les 8",
+    q: "65. Leg uit wat er wordt verstaan onder een 'honeypot' binnen cybersecurity. Wat zijn redenen om dit niet toe te passen op een netwerk?",
+    ans: ["honeypot", "lokken", "onderhoud", "risico", "aanvalsvector", "springplank"],
+    h: "Een bewust kwetsbaar opgezet loksysteem om aanvallers aan te trekken en te bestuderen. Reden tegen: complex in onderhoud en risico op misbruik als springplank."
+  },
+  {
+    type: "open",
+    t: "Les 8",
+    q: "66. Bespreek de firewall regels op onderstaande afbeelding.",
+    ans: ["pfsense", "rules", "anti-lockout", "lan net", "allow", "block"],
+    h: "Analyseer de typische pfSense interface: de Anti-Lockout rule voorkomt dat je jezelf uitsluit van de web-GUI op poort 80/443; daaronder staan de LAN-naar-any regels."
+  },
+  {
+    type: "open",
+    t: "Les 9",
+    q: "67. Wat is een vulnerability, hoe wordt dit veroorzaakt en hoe kan je dit oplossen? Leg uit aan de hand van een voorbeeld.",
+    ans: ["vulnerability", "kwetsbaarheid", "bug", "patch", "update", "configuratie"],
+    h: "Een zwakte in software of configuratie, vaak veroorzaakt door programmeerfouten. Oplossing: updaten, patchen of workaround toepassen."
+  },
+  {
+    type: "open",
+    t: "Les 9",
+    q: "68. Wat is het verschil tussen client-side attacks en server-side attacks? Geef van elk 2 voorbeelden.",
+    ans: ["client-side", "server-side", "browser", "phishing", "sql injection", "luisterende poort"],
+    h: "Server-side richt zich rechtstreeks op luisterende netwerkpoorten/services (bijv. SQLi). Client-side vereist interactie van een gebruiker (bijv. klikken op een malafide link of XSS in browser)."
+  },
+  {
+    type: "open",
+    t: "Les 9",
+    q: "69. Wat wordt er verstaan onder 'OS hardening' en waarom is dit belangrijk binnen cybersecurity?",
+    ans: ["hardening", "oppervlak", "diensten", "poorten", "uitschakelen", "beveiligen"],
+    h: "Het verkleinen van het aanvalsoppervlak van een OS door onnodige applicaties, services, accounts en netwerkpoorten resoluut uit te schakelen of te verwijderen."
+  },
+  {
+    type: "open",
+    t: "Les 9",
+    q: "70. Leg uit hoe je met OS hardening aan de slag kan. Welke acties kan je ondernemen?",
+    ans: ["updates", "services", "wachtwoorden", "firewall", "default", "poorten"],
+    h: "Standaardwachtwoorden wijzigen, firewalls aanzetten, ongebruikte functies deactiveren en automatische security-patches inschakelen."
+  },
+  {
+    type: "open",
+    t: "Les 9",
+    q: "71. Wat is EDR en hoe werkt dit?",
+    ans: ["endpoint detection and response", "edr", "gedrag", "monitoren", "agent", "realtime"],
+    h: "Endpoint Detection and Response. Monitort continu processen en gedrag op endpoints (laptops/servers) via een agent om geavanceerde dreigingen realtime te blokkeren."
+  },
+  {
+    type: "open",
+    t: "Les 9",
+    q: "72. Wat zijn CIS Benchmarks en hoe kunnen deze worden gebruikt binnen cybersecurity?",
+    ans: ["cis benchmarks", "best practices", "configuratie", "hardening", "richtlijnen"],
+    h: "Wereldwijd geaccepteerde, onafhankelijke configuratie-richtlijnen en checklists om specifieke besturingssystemen en software veilig te configureren (hardenen)."
+  },
+  {
+    type: "open",
+    t: "Les 9",
+    q: "73. Leg uit hoe je het gebruik van tools zoals openSCAP zou introduceren in een bestaande omgeving en wat hiervan de beperkingen zijn.",
+    ans: ["openscap", "scannen", "compliance", "beperking", "false positives", "audit"],
+    h: "OpenSCAP automatiseert de controle tegen security-profiles. Beperking: kan legacy-omgevingen verstoren bij automatische remediëring, en geeft soms false positives."
+  },
+  {
+    type: "open",
+    t: "Les 10",
+    q: "74. Bespreek minstens 3 dreigingen die zich kunnen voordoen bij mobiele apparaten.",
+    ans: ["malware", "diefstal", "wi-fi", "phishing", "apps", "onveilig", "smishing"],
+    h: "Denk aan kwaadaardige apps (malware), smishing (sms-phishing), onbeveiligde openbare Wi-Fi-netwerken en het fysiek verliezen van het device."
+  },
+  {
+    type: "open",
+    t: "Les 10",
+    q: "75. Bespreek minstens 3 dreigingen die zich kunnen voordoen bij IoT toestellen.",
+    ans: ["iot", "wachtwoorden", "updates", "hardcoded", "botnet", "firmware"],
+    h: "Hardcoded/standaard wachtwoorden, het ontbreken van firmware-updates (legacy) en het risico op rekrutering in een DDoS-botnet (zoals Mirai)."
+  },
+  {
+    type: "open",
+    t: "Les 10",
+    q: "76. Bespreek de voor- en nadelen van BYOD en noem minstens 2 alternatieven.",
+    ans: ["byod", "kosten", "privacy", "cope", "cyod", "cobo", "beheer"],
+    h: "BYOD bespaart hardwarekosten maar bemoeilijkt centraal beheer en privacy. Alternatieven zijn CYOD (Choose Your Own Device) of COPE (Corporate Owned, Personally Enabled)."
+  },
+  {
+    type: "open",
+    t: "Les 10",
+    q: "77. Wat is het verschil tussen MDM en MAM? Wanneer kies je voor welke oplossing?",
+    ans: ["mdm", "mam", "device", "application", "beheer", "byod", "corporate"],
+    h: "MDM hebt de controle over het volledige fysieke apparaat (voor bedrijfstoestellen); MAM beheert enkel de specifieke bedrijfsapplicaties en data (ideaal voor BYOD)."
+  },
+  {
+    type: "open",
+    t: "Les 10",
+    q: "78. Wat is conditional access en hoe breng je dit in verband met MDM?",
+    ans: ["conditional access", "mdm", "voorwaarden", "compliance", "toegang"],
+    h: "Toegangsregels op basis van voorwaarden. Bijvoorbeeld: een gebruiker krijgt pas toegang tot Microsoft 365 als MDM rapporteert dat het device up-to-date en compliant is."
+  },
+  {
+    type: "open",
+    t: "Les 10",
+    q: "79. Bespreek minstens 2 beveiligingsmaatregelen die belangrijk zijn bij het uitrollen en gebruiken van loT toestellen.",
+    ans: ["segmentatie", "wachtwoord", "firmware", "updates", "vlan", "isolatie"],
+    h: "Isoleer IoT-apparaten in een apart netwerksegment (VLAN) en wijzig direct alle standaardwachtwoorden bij ingebruikname."
+  },
+  {
+    type: "open",
+    t: "Les 10",
+    q: "80. Wanneer kies je voor BYOD, CYOD, COPE of COBO?",
+    ans: ["byod", "cyod", "cope", "cobo", "keuze", "beleid", "controle"],
+    h: "BYOD bij laag budget; CYOD/COPE voor een balans tussen keuze en security; COBO (Corporate Owned, Business Only) voor bedrijfskritische of high-security functies."
+  },
+  {
+    type: "open",
+    t: "Les 11",
+    q: "81. Wat wordt bedoeld met het concept 'cyberweerbaarheid' en waarom is dit belangrijk?",
+    ans: ["cyberweerbaarheid", "resilience", "herstellen", "impact", "continuïteit", "absorberen"],
+    h: "Het vermogen van een organisatie om cyberaanvallen niet alleen af te weren, maar de impact ervan te absorberen, te overleven en snel te herstellen."
+  },
+  {
+    type: "open",
+    t: "Les 11",
+    q: "82. Wat is het verschil tussen een incident response plan, een business continuity plan en een disaster recovery plan? Leg uit aan de hand van een voorbeeld.",
+    ans: ["irp", "bcp", "drp", "incident", "continuïteit", "herstel", "ramp"],
+    h: "IRP mitigeert de directe aanval (technisch indammen); BCP zorgt dat de bedrijfsprocessen doorlopen (bijv. noodprocedures); DRP herstelt de IT-infra na een ramp."
+  },
+  {
+    type: "open",
+    t: "Les 11",
+    q: "83. Bespreek minstens 3 aspecten die voorkomen in een incident response plan.",
+    ans: ["rollen", "communicatie", "escalatie", "containment", "contactgegevens", "fasen"],
+    h: "Rollen en verantwoordelijkheden (wie doet wat), escalatiepaden, containment-procedures en interne/externe communicatierichtlijnen."
+  },
+  {
+    type: "open",
+    t: "Les 11",
+    q: "84. Wat wordt er verstaan onder RTO en RPO?",
+    ans: ["rto", "rpo", "tijd", "dataverlies", "recovery", "maximaal"],
+    h: "RTO (Recovery Time Objective): maximale acceptabele hersteltijd. RPO (Recovery Point Objective): maximaal acceptabel dataverlies, uitgedrukt in tijd."
+  },
+  {
+    type: "open",
+    t: "Les 11",
+    q: "85. Leg de 3-2-1 regel uit bij back-up strategieën. Waarom is deze regel belangrijk?",
+    ans: ["3-2-1", "back-up", "kopieën", "media", "offsite"],
+    h: "Houd minimaal 3 kopieën van data, op minimaal 2 verschillende soorten media (schijf, tape), waarvan minimaal 1 locatie offsite/cloud is."
+  },
+  {
+    type: "open",
+    t: "Les 11",
+    q: "86. Leg volgende begrippen uit: CISO, SOC, Blue Team en Red Team.",
+    ans: ["ciso", "soc", "blue team", "red team", "verdediging", "aanval", "monitoren"],
+    h: "CISO: strategisch security-hoofd. SOC: operationeel monitoringteam. Blue Team: de actieve verdedigers. Red Team: de ethische aanvallers (simulatie)."
+  },
+  {
+    type: "open",
+    t: "Les 11",
+    q: "87. Bespreek de 3 manieren waarop aan recovery kan worden gedaan.",
+    ans: ["full", "incremental", "differential", "herstel", "back-up"],
+    h: "Herstel kan via een volledige back-up (Full), of door een Full back-up te combineren met incrementele (Incremental) of differentiële (Differential) back-ups."
+  },
+  {
+    type: "open",
+    t: "Les 12",
+    q: "88. Wat zijn de stappen om een security assessment uit te voeren?",
+    ans: ["scoping", "planning", "verzamelen", "analyseren", "rapportage", "reconnaissance"],
+    h: "Scoping/planning, informatieverzameling (reconnaissance), kwetsbaarhedenscan, exploitatie/analyse en als laatste de rapportage."
+  },
+  {
+    type: "open",
+    t: "Les 12",
+    q: "89. Wat is het verschil tussen vulnerability assessment, penetration testing en audit en logging?",
+    ans: ["vulnerability assessment", "pentest", "audit", "scannen", "exploiteren", "verifiëren"],
+    h: "Vulnerability assessment zoekt geautomatiseerd naar kwetsbaarheden; een pentest probeert deze handmatig te exploiteren; een audit controleert compliance met beleid en logs."
+  },
+  {
+    type: "open",
+    t: "Les 12",
+    q: "90. Is een hoge CVE score direct ook een hoog risico voor het bedrijf? Verklaar je nader.",
+    ans: ["cve", "score", "context", "risico", "blootstelling", "mitigatie"],
+    h: "Nee, de CVE-score geeft de puur technische ernst aan. Het reële risico hangt af van de context (is het systeem exposed, is er een exploit beschikbaar, zijn er mitigaties?)."
+  },
+  {
+    type: "open",
+    t: "Les 12",
+    q: "91. Wat houdt scoping en planning in bij een security assessment?",
+    ans: ["scoping", "planning", "grenzen", "doelen", "rules of engagement"],
+    h: "Het vastleggen van de exacte grenzen (IP-ranges, systemen), doelen, tijdslijnen en de afspraken ('rules of engagement') van de test."
+  },
+  {
+    type: "open",
+    t: "Les 12",
+    q: "92. Wat is een false positive? Wat is een false negative? Geef een voorbeeld ivm een NESSUS scanner?",
+    ans: ["false positive", "false negative", "nessus", "foutief", "gemist"],
+    h: "False positive: Nessus meldt een kwetsbaarheid die in werkelijkheid niet bestaat. False negative: Nessus mist een reële kwetsbaarheid en meldt niets."
+  },
+  {
+    type: "open",
+    t: "Les 12",
+    q: "93. Wat is het doel van een pentest og wat is zeker niet het doel? Verklaar.",
+    ans: ["doel", "pentest", "kwetsbaarheden", "beveiliging", "slopen", "platleggen"],
+    h: "Doel is het blootleggen van reële kwetsbaarheden om de security te verbeteren. Doel is absoluut *niet* het crashen of permanent beschadigen van productiesystemen."
+  },
+  {
+    type: "open",
+    t: "Les 12",
+    q: "94. Wat is een risico matrix? Vertel hoe die tot stand komt en hoe je die gebruikt.",
+    ans: ["risico matrix", "kans", "impact", "prioriteren", "tabel"],
+    h: "Een matrix die de 'Kans' (Likelihood) afzet tegen de 'Impact' (Gevolg) om risico's visueel te prioriteren en acties te bepalen."
+  },
+  {
+    type: "open",
+    t: "Les 12",
+    q: "95. Welke aspecten zijn belangrijk in een goede rapportage van een security assessment/pentest?",
+    ans: ["executive summary", "technische details", "remediëring", "prioriteit", "bevindingen"],
+    h: "Een management samenvatting (executive summary), gedetailleerde technische bevindingen met reproductiestappen en concrete aanbevelingen voor herstel (remediëring)."
+  },
+  {
+    type: "open",
+    t: "Les 12",
+    q: "96. Wat is een zero-day vulnerability? Hoe ga je te werk tegen een zero-day vulnerability?",
+    ans: ["zero-day", "onbekend", "patch", "defense in depth", "mitigatie", "monitoring"],
+    h: "Een kwetsbaarheid die nog onbekend is bij de ontwikkelaar (er is geen patch). Aanpak: defense in depth, scherpe monitoring en netwerksegmentatie."
+  }
+];
+
+// ── CONFIG ──────────────────────────────────────────
+const cfg = {
+  count: sessionStorage.getItem('cfg-count') || '50',
+  order: sessionStorage.getItem('cfg-order') || 'shuffle',
+  types: sessionStorage.getItem('cfg-types') || 'all',
+};
+
+// ── INIT ────────────────────────────────────────────
+const POOL = window.QUESTIONS_cybersecurity || [];
+let questions = [...POOL];
+if (cfg.types !== 'all') questions = questions.filter(q => q.type === cfg.types);
+if (cfg.order === 'shuffle') questions = questions.sort(() => Math.random() - 0.5);
+if (cfg.count !== 'all') questions = questions.slice(0, parseInt(cfg.count));
+
+let idx = 0, correct = 0, wrong = 0, sel = new Set();
+
+function updateStats() {
+  const done = idx, total = questions.length, left = total - done;
+  const pct = done > 0 ? Math.round(correct / done * 100) : null;
+  document.getElementById('sv-score').textContent = correct;
+  document.getElementById('sv-wrong').textContent = wrong;
+  document.getElementById('sv-left').textContent = left;
+  document.getElementById('sv-pct').textContent = pct !== null ? pct + '%' : '—';
+  document.getElementById('prog').style.width = total > 0 ? (done / total * 100) + '%' : '0%';
+  document.getElementById('prog-txt').textContent = `Vraag ${total > 0 ? Math.min(idx+1,total) : 0} / ${total}`;
+}
+
+function renderQ() {
+  if (questions.length === 0) {
+    showScore();
+    return;
+  }
+
+  sel = new Set();
+  const q = questions[idx];
+  const letters = ['A','B','C','D','E','F'];
+
+  let body = '';
+  if (q.type === 'open') {
+    body = `<textarea class="open-inp" id="oa" rows="2" placeholder="Typ je antwoord hier…" oninput="onOI()"></textarea>`;
+  } else {
+    body = `<div class="opts">${q.o.map((o,i) => `<div class="opt" id="o${i}" onclick="tog(${i})"><div class="opt-box" id="b${i}"></div><span class="opt-letter">${letters[i]}</span><span class="opt-text">${o}</span></div>`).join('')}</div>`;
+  }
+
+  const tb = q.type === 'multi' ? `<span class="q-tbadge tb-multi">◈ Meerdere antwoorden</span>`
+           : q.type === 'open'  ? `<span class="q-tbadge tb-open">✏ Open vraag</span>` : '';
+
+  document.getElementById('q-container').innerHTML = `
+    <div class="q-card">
+      <div class="q-meta">
+        <span class="q-num">V${idx+1}</span>
+        <span class="q-sub">${q.t || ''}</span>
+        ${tb}
+      </div>
+      <div class="q-text">${q.q}</div>
+      ${body}
+      <button class="hint-btn" id="hint-btn" onclick="toggleHint()">💡 Hint</button>
+      <div class="hint-box" id="hint-box">${q.h}</div>
+      <div class="feedback" id="fb"></div>
+    </div>`;
+
+  const bc = document.getElementById('btn-check');
+  bc.disabled = true;
+  bc.classList.remove('hidden');
+  document.getElementById('btn-next').classList.add('hidden');
+  document.getElementById('btn-skip').classList.remove('hidden');
+
+  if (q.type === 'open') {
+    document.getElementById('oa').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!bc.disabled) check(); }
+    });
+  }
+}
+
+function onOI() {
+  document.getElementById('btn-check').disabled = !document.getElementById('oa').value.trim();
+}
+
+function toggleHint() {
+  const hb = document.getElementById('hint-box');
+  hb.classList.toggle('show');
+  document.getElementById('hint-btn').textContent = hb.classList.contains('show') ? '💡 Hint verbergen' : '💡 Hint';
+}
+
+function tog(i) {
+  const q = questions[idx];
+  if (document.getElementById('o'+i)?.classList.contains('locked')) return;
+  if (q.type === 'mc') {
+    sel.forEach(s => { document.getElementById('o'+s)?.classList.remove('sel'); const b=document.getElementById('b'+s); if(b) b.innerHTML=''; });
+    sel.clear();
+  }
+  if (sel.has(i)) {
+    sel.delete(i);
+    document.getElementById('o'+i).classList.remove('sel');
+    document.getElementById('b'+i).innerHTML = '';
+  } else {
+    sel.add(i);
+    document.getElementById('o'+i).classList.add('sel');
+    document.getElementById('b'+i).innerHTML = '✓';
+  }
+  document.getElementById('btn-check').disabled = sel.size === 0;
+}
+
+function check() {
+  const q = questions[idx];
+  let ok = false;
+
+  if (q.type === 'open') {
+    const raw = document.getElementById('oa').value.trim().toLowerCase();
+    const acc = (q.ans||[]).map(a=>a.toLowerCase());
+    ok = acc.some(a => raw===a || raw.includes(a) || a.includes(raw));
+    const ta = document.getElementById('oa');
+    ta.classList.add(ok?'ok':'bad');
+    ta.disabled = true;
+  } else {
+    const s=[...sel], cor=q.c;
+    q.o.forEach((_,i)=>document.getElementById('o'+i)?.classList.add('locked'));
+    q.o.forEach((_,i)=>{
+      const el=document.getElementById('o'+i),bx=document.getElementById('b'+i);
+      if(!el) return;
+      el.classList.remove('sel');
+      if(s.includes(i)&&cor.includes(i)){el.classList.add('ok');if(bx)bx.innerHTML='✓';}
+      else if(s.includes(i)&&!cor.includes(i)){el.classList.add('bad');if(bx)bx.innerHTML='✗';}
+      else if(!s.includes(i)&&cor.includes(i)){el.classList.add('missed');if(bx)bx.innerHTML='!';}
+    });
+    ok = cor.every(c=>s.includes(c))&&s.every(sv=>cor.includes(sv));
+  }
+
+  if(ok) correct++; else wrong++;
+  updateStats();
+
+  const fb=document.getElementById('fb');
+  fb.className='feedback show '+(ok?'fb-ok':'fb-bad');
+  fb.innerHTML=(ok?'✅ <strong>Correct!</strong> ':'❌ <strong>Fout.</strong> ')+(q.f || 'Vergelijk je antwoord met de theorie.');
+
+  document.getElementById('btn-check').classList.add('hidden');
+  document.getElementById('btn-skip').classList.add('hidden');
+  const bn=document.getElementById('btn-next');
+  bn.classList.remove('hidden');
+  bn.textContent = idx>=questions.length-1 ? 'Resultaten →' : 'Volgende →';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function skipQ() { wrong++; updateStats(); advance(); }
+function nextQ() { advance(); }
+function advance() {
+  idx++;
+  if(idx>=questions.length){showScore();return;}
+  renderQ();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function showScore() {
+  const total=questions.length, pct=total > 0 ? Math.round(correct/total*100) : 0;
+  let msg = 'Geen vragen beschikbaar in deze quiz.';
+  if (total > 0) {
+    msg = pct>=85?'🏆 Uitstekend! Je beheerst de leerstof.':pct>=70?'👍 Goed gedaan! Nog wat herhaling.':pct>=55?'📚 Voldoende — extra studie aangeraden.':'💡 Herhaal de cursus en probeer opnieuw.';
+  }
+  
+  document.getElementById('quiz-screen').style.display='none';
+  const sc=document.getElementById('score-screen');
+  sc.style.display='block';
+  sc.innerHTML=`
+    <div class="sc-badge">🔐 Cybersecurity Intro</div>
+    <div class="sc-pct">${total > 0 ? pct + '%' : '0%'}</div>
+    <div class="sc-msg">${msg}</div>
+    <div class="sc-grid">
+      <div class="sc-item"><span class="sc-num" style="color:var(--correct)">${correct}</span><span class="sc-lbl">Correct</span></div>
+      <div class="sc-item"><span class="sc-num" style="color:var(--wrong)">${wrong}</span><span class="sc-lbl">Fout / Over</span></div>
+      <div class="sc-item"><span class="sc-num" style="color:var(--muted2)">${total}</span><span class="sc-lbl">Totaal</span></div>
+    </div>
+    <div class="sc-btns">
+      <a class="btn-home" href="index.html">← Andere module</a>
+      <button class="btn-retry" onclick="location.reload()">↺ Opnieuw</button>
+    </div>`;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// Start
+updateStats();
+renderQ();
+</script>
+</body>
+</html>
+
+```

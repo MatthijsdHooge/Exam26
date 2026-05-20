@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌐 Routering & Switching — AP Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07080b;--panel:#0d0f14;--panel2:#141720;
+  --border:#1a1f2e;--border2:#242b3d;
+  --text:#dde3f0;--muted:#4a5568;--muted2:#6b7280;
+  --c:#ffb800;--correct:#22c55e;--wrong:#ef4444;--amber:#ffb800;--purple:#a855f7;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(0,212,255,.05),transparent);pointer-events:none;z-index:0}
+.wrap{max-width:860px;margin:0 auto;padding:28px 20px 80px;position:relative;z-index:1}
+
+/* topbar */
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:28px;flex-wrap:wrap}
+.back{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted2);background:transparent;border:1px solid var(--border2);padding:7px 14px;border-radius:4px;cursor:pointer;text-decoration:none;transition:all .15s;display:inline-block}
+.back:hover{border-color:var(--muted);color:var(--text)}
+.topic-pill{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--c);border:1px solid;border-color:color-mix(in srgb,var(--c) 40%,transparent);background:color-mix(in srgb,var(--c) 8%,transparent);padding:5px 14px;border-radius:3px;margin-left:auto}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--border);border-radius:7px;overflow:hidden;background:var(--panel);margin-bottom:16px}
+.stat{text-align:center;padding:12px 0;border-right:1px solid var(--border)}
+.stat:last-child{border-right:none}
+.sv{font-family:'IBM Plex Mono',monospace;font-size:1.3rem;font-weight:700;line-height:1;display:block}
+.sl{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-top:3px;display:block}
+.prog-wrap{height:3px;background:var(--border);border-radius:2px;margin-bottom:5px;overflow:hidden}
+.prog{height:100%;background:linear-gradient(90deg,var(--c),color-mix(in srgb,var(--c) 70%,#fff));transition:width .5s ease;width:0;border-radius:2px}
+.prog-txt{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-align:right;margin-bottom:20px}
+
+/* card */
+.q-card{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:32px 36px;margin-bottom:18px;animation:up .3s ease}
+@keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.q-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+.q-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--c);background:color-mix(in srgb,var(--c) 8%,transparent);border:1px solid color-mix(in srgb,var(--c) 25%,transparent);padding:3px 10px;border-radius:2px}
+.q-sub{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted2);background:var(--panel2);border:1px solid var(--border);padding:3px 10px;border-radius:2px}
+.q-tbadge{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px}
+.tb-multi{color:var(--amber);background:rgba(255,184,0,.07);border:1px solid rgba(255,184,0,.2)}
+.tb-open{color:var(--purple);background:rgba(168,85,247,.07);border:1px solid rgba(168,85,247,.2)}
+.q-text{font-size:1.02rem;font-weight:500;line-height:1.65;margin-bottom:22px}
+
+/* options */
+.opts{display:flex;flex-direction:column;gap:9px}
+.opt{display:flex;align-items:flex-start;gap:13px;padding:12px 16px;border:1px solid var(--border);border-radius:5px;cursor:pointer;transition:border-color .12s,background .12s;background:var(--bg);user-select:none}
+.opt:hover:not(.locked){border-color:var(--c);background:color-mix(in srgb,var(--c) 4%,transparent)}
+.opt.sel{border-color:var(--c);background:color-mix(in srgb,var(--c) 7%,transparent)}
+.opt.ok{border-color:var(--correct);background:rgba(34,197,94,.07)}
+.opt.bad{border-color:var(--wrong);background:rgba(239,68,68,.07)}
+.opt.missed{border-color:var(--amber);background:rgba(255,184,0,.06)}
+.opt-box{width:18px;height:18px;flex-shrink:0;margin-top:2px;border:2px solid var(--border2);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;transition:all .12s}
+.opt.sel .opt-box{border-color:var(--c);background:var(--c);color:var(--bg)}
+.opt.ok .opt-box{border-color:var(--correct);background:var(--correct);color:#fff}
+.opt.bad .opt-box{border-color:var(--wrong);background:var(--wrong);color:#fff}
+.opt.missed .opt-box{border-color:var(--amber);background:var(--amber);color:#000}
+.opt-letter{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:3px;flex-shrink:0}
+.opt-text{font-size:.92rem;line-height:1.5}
+
+/* open */
+.open-inp{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:12px 16px;font-family:'IBM Plex Sans',sans-serif;font-size:.95rem;resize:none;transition:border-color .15s;margin-top:4px}
+.open-inp:focus{outline:none;border-color:var(--c)}
+.open-inp.ok{border-color:var(--correct);background:rgba(34,197,94,.07)}
+.open-inp.bad{border-color:var(--wrong);background:rgba(239,68,68,.07)}
+
+/* hint */
+.hint-btn{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--amber);background:rgba(255,184,0,.07);border:1px solid rgba(255,184,0,.2);padding:6px 14px;border-radius:4px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px;margin-top:16px}
+.hint-btn:hover{background:rgba(255,184,0,.13)}
+.hint-box{margin-top:10px;padding:12px 16px;background:rgba(255,184,0,.06);border:1px solid rgba(255,184,0,.2);border-radius:5px;font-size:.88rem;line-height:1.6;color:var(--amber);display:none;animation:up .2s ease}
+.hint-box.show{display:block}
+
+/* feedback */
+.feedback{margin-top:18px;padding:13px 18px;border-radius:5px;font-size:.88rem;line-height:1.6;display:none;animation:up .2s ease}
+.feedback.show{display:block}
+.fb-ok{background:rgba(34,197,94,.09);border:1px solid rgba(34,197,94,.3)}
+.fb-bad{background:rgba(239,68,68,.09);border:1px solid rgba(239,68,68,.3)}
+
+/* btns */
+.btn-row{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+.btn{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:1px;text-transform:uppercase;padding:10px 22px;border-radius:4px;cursor:pointer;border:none;transition:all .15s}
+.btn-check{background:var(--c);color:#07080b;font-weight:700}
+.btn-check:hover:not(:disabled){filter:brightness(1.15);transform:translateY(-1px)}
+.btn-check:disabled{background:var(--border);color:var(--muted);cursor:not-allowed;transform:none}
+.btn-next{background:transparent;color:var(--c);border:1px solid var(--c)}
+.btn-next:hover{background:color-mix(in srgb,var(--c) 8%,transparent)}
+.btn-skip{background:transparent;color:var(--muted2);border:1px solid var(--border2)}
+.btn-skip:hover{border-color:var(--muted);color:var(--text)}
+.hidden{display:none!important}
+
+/* score */
+#score-screen{display:none;text-align:center;padding:60px 24px 100px;max-width:680px;margin:0 auto;position:relative;z-index:1}
+.sc-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:4px;text-transform:uppercase;color:var(--c);border:1px solid color-mix(in srgb,var(--c) 30%,transparent);padding:5px 16px;border-radius:2px;display:inline-block;margin-bottom:20px}
+.sc-pct{font-family:'IBM Plex Mono',monospace;font-size:clamp(4rem,12vw,7rem);font-weight:700;line-height:1;margin:16px 0;color:var(--c)}
+.sc-msg{font-size:1.05rem;color:var(--muted2);margin:12px 0 32px}
+.sc-grid{display:flex;justify-content:center;gap:40px;flex-wrap:wrap;margin:24px 0 40px}
+.sc-item{text-align:center}
+.sc-num{font-family:'IBM Plex Mono',monospace;font-size:2rem;font-weight:700;display:block}
+.sc-lbl{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-top:3px;display:block}
+.sc-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn-home{font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:1px;text-transform:uppercase;padding:13px 32px;border-radius:4px;cursor:pointer;font-weight:700;transition:all .15s;background:transparent;color:var(--c);border:1px solid var(--c);text-decoration:none;display:inline-block}
+.btn-home:hover{background:color-mix(in srgb,var(--c) 8%,transparent)}
+.btn-retry{font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:1px;text-transform:uppercase;padding:13px 32px;border-radius:4px;cursor:pointer;font-weight:700;transition:all .15s;border:none;background:var(--c);color:#07080b}
+.btn-retry:hover{filter:brightness(1.15);transform:translateY(-1px)}
+
+@media(max-width:600px){
+  .q-card{padding:20px 18px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .stat:nth-child(2){border-right:none}
+  .stat:nth-child(3){border-right:1px solid var(--border)}
+}
+</style>
+</head>
+<body>
+
+<div id="quiz-screen" class="wrap">
+  <div class="topbar">
+    <a class="back" href="index.html">← Terug</a>
+    <span class="topic-pill">🌐 Routering & Switching</span>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><span class="sv" id="sv-score" style="color:var(--correct)">0</span><span class="sl">Correct</span></div>
+    <div class="stat"><span class="sv" id="sv-wrong" style="color:var(--wrong)">0</span><span class="sl">Fout</span></div>
+    <div class="stat"><span class="sv" id="sv-left" style="color:var(--c)">—</span><span class="sl">Resterend</span></div>
+    <div class="stat"><span class="sv" id="sv-pct" style="color:#a855f7">—</span><span class="sl">Score %</span></div>
+  </div>
+  <div class="prog-wrap"><div class="prog" id="prog"></div></div>
+  <div class="prog-txt" id="prog-txt">Vraag 1 / —</div>
+
+  <div id="q-container"></div>
+
+  <div class="btn-row">
+    <button class="btn btn-skip" id="btn-skip" onclick="skipQ()">Sla over</button>
+    <button class="btn btn-check" id="btn-check" disabled onclick="check()">Controleer</button>
+    <button class="btn btn-next hidden" id="btn-next" onclick="nextQ()">Volgende →</button>
+  </div>
+</div>
+
+<div id="score-screen"></div>
+
+<script>
+window.QUESTIONS_routering = [
+{type:"mc",q:"Op welke OSI-laag werkt een switch?",o:["Laag 1 (Physical)","Laag 2 (Data Link)","Laag 3 (Network)","Laag 4 (Transport)"],c:[1],h:"Switches werken op MAC-adressen — dat is de Data Link laag."},
+{type:"mc",q:"Wat is een CAM-table (Content Addressable Memory)?",o:["Een tabel met IP-adressen en poortnummers","Een tabel die MAC-adressen koppelt aan switch-poorten","Een routeringstabel","Een ARP-tabel"],c:[1],h:"De CAM-table = het 'geheugen' van de switch: welk MAC-adres zit achter welke poort?"},
+{type:"mc",q:"Hoe leert een switch welk MAC-adres achter welke poort zit?",o:["Via een manuele configuratie","Via dynamic MAC address learning: de switch leest het bron-MAC-adres van elk inkomend frame","Via SNMP","Via ARP broadcasts"],c:[1],h:"De switch 'leert' door passief naar het source MAC van elk inkomend frame te kijken."},
+{type:"mc",q:"Wat doet een switch als het destination MAC-adres NIET in de CAM-table staat?",o:["Het frame wordt weggegooid","Het frame wordt geflooded naar alle poorten behalve de inkomende poort (unicast flooding)","Het frame wordt teruggestuurd naar de afzender","De switch vraagt een ARP-request"],c:[1],h:"Unknown MAC = flood. De switch stuurt het frame naar alle poorten om de bestemming te vinden."},
+{type:"mc",q:"Wat is het verschil tussen een switch en een hub?",o:["Ze zijn identiek","Een hub stuurt frames naar ALLE poorten; een switch stuurt frames alleen naar de juiste poort op basis van MAC-adres","Een switch werkt op laag 3; een hub op laag 2","Een hub is sneller dan een switch"],c:[1],h:"Switch = intelligent (MAC-gebaseerd). Hub = dom (broadcast naar iedereen)."},
+{type:"mc",q:"Wat is een collision domain?",o:["Een netwerksegment waar broadcasts worden uitgewisseld","Een netwerksegment waar slechts één apparaat tegelijk data kan sturen (botsingen mogelijk)","Een VLAN-domein","Een routeringsdomein"],c:[1],h:"Hubs creëren één collision domain. Elke switch-poort is een apart collision domain."},
+{type:"mc",q:"Wat is een broadcast domain?",o:["Een netwerksegment waar MAC-adressen worden gedeeld","Een logisch netwerksegment waarbij alle apparaten elkaars broadcasts ontvangen","Een type VLAN","Een subnet"],c:[1],h:"Broadcasts gaan naar het hele broadcast domain. Routers en VLANs begrenzen broadcast domains."},
+{type:"multi",q:"Welke bewerkingen voert een switch uit bij het ontvangen van een frame? (meerdere antwoorden)",o:["Ingress: frame binnenkomt op poort","Source MAC leren en in CAM-table opslaan","Destination MAC opzoeken in CAM-table","Forwarding beslissing nemen","Frame doorsturen of flooden"],c:[0,1,2,3,4],h:"Het volledige switching-proces bestaat uit deze vijf stappen."},
+{type:"mc",q:"Wat is store-and-forward switching?",o:["De switch stuurt het frame door na de eerste paar bytes","De switch ontvangt het volledige frame, controleert op fouten (FCS), en stuurt het dan door","De switch buffert frames oneindig","De switch stuurt frames terug bij fouten"],c:[1],h:"Store-and-forward = ontvang volledig → controleer → doorstuur. Betrouwbaarder maar iets trager."},
+{type:"mc",q:"Wat is cut-through switching?",o:["De switch wacht op het volledige frame","De switch begint met doorsturen na het lezen van het destination MAC-adres — sneller maar geen foutcontrole","De switch verwerpt kleine frames","De switch gebruikt buffers voor alle frames"],c:[1],h:"Cut-through = begin meteen. Sneller, maar defecte frames worden toch doorgestuurd."},
+{type:"mc",q:"Wat is een half-duplex verbinding?",o:["Gelijktijdig verzenden en ontvangen mogelijk","Verzenden of ontvangen, maar niet tegelijk — vergelijkbaar met een walkietalkie","Een verbinding met dubbele bandbreedte","Een verbinding zonder foutcorrectie"],c:[1],h:"Half-duplex = beurtelings communiceren. Full-duplex = tegelijk in beide richtingen."},
+{type:"mc",q:"Wat is een trunk-poort op een switch?",o:["Een poort voor servers","Een poort die verkeer van meerdere VLANs draagt via 802.1Q tagging","Een poort die één specifiek VLAN draagt","Een uplink naar het internet"],c:[1],h:"Trunk = meerdere VLANs over één fysieke link. De VLAN-tag identificeert welk VLAN elk frame bij hoort."},
+{type:"mc",q:"Wat is een VLAN?",o:["Een fysiek gescheiden netwerk","Een logisch gescheiden netwerk op één of meerdere switches — apparaten in hetzelfde VLAN communiceren alsof ze op hetzelfde fysieke netwerk zitten","Een type routeringsprotocol","Een beveiligingsgroep"],c:[1],h:"VLAN = logische scheiding zonder fysieke bekabeling te wijzigen."},
+{type:"multi",q:"Welke voordelen bieden VLANs? (meerdere antwoorden)",o:["Beveiliging: verkeer van verschillende groepen gescheiden","Verminderd broadcast-verkeer per VLAN","Flexibiliteit: gebruikers logisch indelen onafhankelijk van fysieke locatie","Automatische encryptie van verkeer","Vereenvoudiging van netwerkbeheer"],c:[0,1,2,4],h:"VLANs versleutelen NIET automatisch verkeer — dat is een andere beveiligingsmaatregel."},
+{type:"mc",q:"Wat is het verschil tussen een access-poort en een trunk-poort?",o:["Ze zijn identiek","Access-poort = één VLAN (voor eindapparaten); trunk-poort = meerdere VLANs (voor verbindingen tussen switches)","Trunk-poort = één VLAN; access-poort = meerdere VLANs","Access-poort is voor uplinks; trunk voor servers"],c:[1],h:"Access = één VLAN voor eindgebruikersapparaten. Trunk = meerdere VLANs voor interswitch links."},
+{type:"open",q:"Welke IEEE-standaard wordt gebruikt voor VLAN-tagging op trunk-poorten?",ans:["802.1q","ieee 802.1q","dot1q"],h:"De standaard begint met '802.1' en wordt ook 'dot1Q' genoemd."},
+{type:"mc",q:"Wat is het 'native VLAN' op een trunk-poort?",o:["Het enige VLAN dat de trunk-poort mag gebruiken","Het VLAN waarvan frames NIET worden getagged op de trunk-verbinding — typisch VLAN 1","Het management VLAN","Het VLAN met de hoogste prioriteit"],c:[1],h:"Native VLAN = ongetagged verkeer. Beide kanten van de trunk moeten hetzelfde native VLAN hebben."},
+{type:"mc",q:"Wat is inter-VLAN routing?",o:["Routing tussen twee switches","Het routeren van verkeer tussen twee of meer VLANs via een router of Layer 3 switch","Het uitwisselen van VLAN-informatie tussen switches","Het automatisch aanmaken van VLANs"],c:[1],h:"VLANs zijn gescheiden — ze kunnen niet direct communiceren. Een router of L3-switch overbrugt VLANs."},
+{type:"mc",q:"Wat is een 'router-on-a-stick' configuratie?",o:["Een router met één netwerkkabel","Inter-VLAN routing via één fysieke router-interface met meerdere sub-interfaces (één per VLAN)","Een router die enkel als switch werkt","Een router met VLAN-ondersteuning op alle poorten"],c:[1],h:"Één fysieke interface, meerdere logische sub-interfaces — elk voor een ander VLAN. Efficiënt maar één bottleneck."},
+{type:"mc",q:"Wat is een Layer 3 switch?",o:["Een switch met meer poorten","Een switch met ingebouwde routeringsfunctionaliteit die zowel op laag 2 (MAC) als laag 3 (IP) kan werken","Een switch die enkel op laag 3 werkt","Een router vermomd als switch"],c:[1],h:"L3 switch = switch + router. Kan inter-VLAN routing uitvoeren zonder aparte router."},
+{type:"mc",q:"Wat is VTP (VLAN Trunking Protocol)?",o:["Een protocol voor VLAN-tagging","Een Cisco-protocol dat VLAN-informatie automatisch distribueert tussen switches in een VTP-domein","Een protocol voor inter-VLAN routing","Een standaard voor trunk-configuratie"],c:[1],h:"VTP = automatische VLAN-distributie. Configureer VLANs op de server, alle clients volgen automatisch."},
+{type:"multi",q:"Welke VTP-modes bestaan er? (meerdere antwoorden)",o:["Server","Client","Transparent","Off","Master"],c:[0,1,2,3],h:"De vier officiële VTP-modes. 'Master' bestaat niet in VTP."},
+{type:"mc",q:"Wat is een VLAN voor voice-verkeer (voice VLAN)?",o:["Een VLAN zonder QoS","Een speciaal VLAN voor VoIP-telefoons met hogere prioriteit (QoS) voor lagere latency","Een VLAN voor management-verkeer","Een VLAN voor draadloze apparaten"],c:[1],h:"VoIP is latency-gevoelig — een apart voice VLAN met QoS garandeert spraakkwaliteit."},
+{type:"mc",q:"Wat is het doel van STP (Spanning Tree Protocol)?",o:["VLANs configureren op switches","Lussen in het netwerk voorkomen door redundante paden te blokkeren terwijl redundantie behouden blijft","Verkeer routeren tussen VLANs","MAC-adressen leren"],c:[1],h:"Lussen = broadcast storms. STP blokkeert redundante paden maar houdt ze als backup beschikbaar."},
+{type:"mc",q:"Wat is een Root Bridge?",o:["De switch met de meeste poorten","De switch die gekozen wordt als centraal referentiepunt van de spanning tree","De switch verbonden met het internet","De switch met het meeste verkeer"],c:[1],h:"De Root Bridge is het 'hart' van de spanning tree — alle paden worden vanuit hier berekend."},
+{type:"mc",q:"Hoe wordt de Root Bridge gekozen?",o:["De switch met de meeste poorten","De switch met de laagste Bridge ID (prioriteit + MAC-adres)","De switch met de meeste verbindingen","Manueel geconfigureerd door de beheerder"],c:[1],h:"Bridge ID = prioriteit (default 32768) + MAC-adres. Laagste = wint. Pas prioriteit aan om te sturen."},
+{type:"open",q:"Hoe heet de STP-poorttoestand waarbij een poort actief forwardt maar geen paden naar de root heeft?",ans:["designated port","designated","designated poort"],h:"Niet de root port, maar de poort die op het segment de beste weg naar de root heeft."},
+{type:"multi",q:"Welke STP-poorttoestanden zijn er in classiek STP? (meerdere antwoorden)",o:["Blocking","Listening","Learning","Forwarding","Disabled"],c:[0,1,2,3,4],h:"Alle vijf zijn officiële STP-poorttoestanden."},
+{type:"mc",q:"Wat is RSTP (Rapid STP)?",o:["Een verouderde versie van STP","Een verbeterde versie van STP (802.1w) met snellere convergentie — seconden in plaats van 30-50 seconden","Een Cisco-proprietary versie van STP","Een protocol voor VLAN-tagging"],c:[1],h:"Rapid = snel. RSTP convergeert in seconden, klassiek STP duurt 30-50 seconden."},
+{type:"mc",q:"Wat is PortFast in STP?",o:["Een feature die de STP-convergentie versnelt voor alle poorten","Een Cisco-feature die de STP-wachttijd (Listening/Learning) overslaat voor poorten verbonden met eindapparaten","Een type root bridge configuratie","Een feature om trunk-poorten te detecteren"],c:[1],h:"PortFast = direct in Forwarding voor access-poorten. Nooit op trunk-poorten — dat veroorzaakt lussen!"},
+{type:"mc",q:"Wat is BPDU Guard?",o:["Beschermt BPDU-pakketten tegen afluisteren","Schakelt een PortFast-poort uit als er een BPDU binnenkomt (wat een switch aangeeft) — beschermt tegen onbedoelde lussen","Versnelt STP-convergentie","Een type VLAN-beveiliging"],c:[1],h:"Een BPDU op een PortFast-poort = iemand heeft een switch aangesloten. BPDU Guard schakelt de poort uit."},
+{type:"mc",q:"Wat is PVST+ (Per-VLAN Spanning Tree Plus)?",o:["Eén STP-instantie voor alle VLANs","Een Cisco-variant waarbij per VLAN een aparte STP-instantie draait — meer controle over paden per VLAN","Een verouderde STP-versie","Een versie van STP voor laag 3 switches"],c:[1],h:"PVST+ = één spanning tree per VLAN. Je kunt per VLAN load-balancing doen over redundante links."},
+{type:"mc",q:"Wat is een broadcast storm?",o:["Een periode van hoog broadcast-verkeer tijdens een piekuur","Een exponentieel toenemende hoeveelheid broadcasts door een netwerkluus — kan een netwerk volledig platleggen","Een type DDoS-aanval","Een fout in een routeringsprotocol"],c:[1],h:"Lus + broadcast = A stuurt naar B, B forwardt naar A, A forwardt naar B... eindeloos. STP voorkomt dit."},
+{type:"mc",q:"Wat is DHCP?",o:["Domain Host Configuration Protocol","Dynamic Host Configuration Protocol — wijst automatisch IP-adressen en netwerkconfiguratie toe aan clients","Een type DNS-server","Een routeringsprotocol"],c:[1],h:"DHCP = automatische IP-configuratie. Geen manuele instelling nodig op clients."},
+{type:"mc",q:"Welke informatie verstrekt een DHCP-server aan een client? (meerdere aanwezig)",o:["IP-adres","Subnetmasker","Default gateway","DNS-server","Naam van de netwerknbeheerder"],c:[0],h:"DHCP verstrekt: IP-adres, subnetmasker, default gateway, DNS-servers en soms meer (NTP, domain name)."},
+{type:"multi",q:"Welke vier stappen omvat het DHCP-process (DORA)? (meerdere antwoorden)",o:["Discover","Offer","Request","Acknowledge","Confirm","Negotiate"],c:[0,1,2,3],h:"DORA = Discover, Offer, Request, Acknowledge. De vier stappen van DHCP-onderhandeling."},
+{type:"mc",q:"Wat is een DHCP lease?",o:["Een contract met de DHCP-leverancier","De tijdsduur gedurende welke een client een IP-adres mag gebruiken","Een type IP-adres","Een DHCP-pool"],c:[1],h:"Na het verstrijken van de lease vraagt de client vernieuwing — of het adres wordt vrijgegeven."},
+{type:"mc",q:"Wat is een DHCP-scope?",o:["Een type VLAN","De pool van IP-adressen die de DHCP-server kan uitdelen","De maximale duur van een lease","Een firewall-regel voor DHCP-verkeer"],c:[1],h:"Scope = pool. Je definieert het bereik (range) van adressen die de server mag toewijzen."},
+{type:"mc",q:"Wat is een DHCP reservation?",o:["Een scope waarvoor DHCP uitgeschakeld is","Een vaste IP-adrestoewijzing aan een specifiek MAC-adres — het apparaat krijgt altijd hetzelfde IP","Een back-up van de DHCP-database","Een type VLAN-toewijzing via DHCP"],c:[1],h:"Reservation = statisch IP via DHCP op basis van MAC-adres. Beste van beide werelden."},
+{type:"mc",q:"Wat is een DHCP relay agent?",o:["Een back-up DHCP-server","Een component op een router/switch die DHCP-broadcasts omzet naar unicast en doorstuurt naar een DHCP-server in een ander netwerksegment","Een type DHCP-client","Een DHCP-monitoring tool"],c:[1],h:"DHCP gebruikt broadcasts — broadcasts oversteken geen routers. Relay agent lost dit op."},
+{type:"open",q:"Op welke UDP-poorten communiceert DHCP?",ans:["67 en 68","67, 68","68 en 67","udp 67 en 68"],h:"De server luistert op één poort, de client op een andere — beide zijn onder 100."},
+{type:"mc",q:"Wat is DHCP snooping?",o:["Een aanvalstechniek op DHCP","Een beveiligingsfunctie op switches die valse DHCP-servers blokkeert door poorten te classificeren als trusted of untrusted","Een type DHCP-scope","Een monitoringfunctie voor DHCP-leases"],c:[1],h:"DHCP snooping vertrouwt enkel DHCP-antwoorden van de 'trusted' poort waar de echte server op zit."},
+{type:"mc",q:"Wat is een DHCP conflict?",o:["Twee DHCP-servers die dezelfde scope hebben","Een IP-adres dat door de DHCP-server is uitgedeeld maar ook manueel gebruikt wordt — leidt tot IP-conflicten","Een fout in de DHCP-configuratie","Een DHCP-server die geen adressen meer heeft"],c:[1],h:"Conflict = zelfde IP voor twee apparaten. Gebruik reservations of sla manueel toegewezen IPs uit de scope."},
+{type:"mc",q:"Wat is NAT?",o:["Network Access Technology","Network Address Translation — vertaalt private IP-adressen naar publieke IP-adressen voor internettoegang","Een type DNS-record","Een routeringsprotocol"],c:[1],h:"NAT = de vertaler. Private IPs zijn niet routeerbaar op het internet; NAT lost dit op."},
+{type:"mc",q:"Wat is het verschil tussen PAT en NAT?",o:["Ze zijn identiek","PAT (Port Address Translation) = meerdere private IPs vertalen naar één publiek IP via poortnummers; NAT kan ook één-op-één vertaling doen","NAT gebruikt poorten; PAT niet","PAT is voor IPv6; NAT voor IPv4"],c:[1],h:"PAT = NAT overload. Eén publiek IP gedeeld door honderden interne apparaten dankzij poortnummers."},
+{type:"mc",q:"Wat is statische NAT?",o:["Eén publiek IP gedeeld door meerdere interne IPs","Een vaste één-op-één mapping tussen een privaat en een publiek IP-adres","NAT met behulp van poorten","Tijdelijke NAT-vertalingen"],c:[1],h:"Statisch = permanent, vast. Nuttig voor servers die van buiten bereikbaar moeten zijn."},
+{type:"mc",q:"Waarom is NAT een partiële beveiligingsoplossing?",o:["NAT versleutelt verkeer","NAT verbergt interne IP-adressen voor buitenstaanders, maar is geen vervanging voor een firewall","NAT blokkeert alle inkomende verbindingen","NAT detecteert aanvallen"],c:[1],h:"NAT = obscuring, geen security. Interne IPs zijn onzichtbaar maar NAT controleert geen verkeer inhoudelijk."},
+{type:"mc",q:"Op welke OSI-laag werkt een router?",o:["Laag 1","Laag 2","Laag 3 (Network)","Laag 4"],c:[2],h:"Routers werken op IP-adressen — dat is de Network laag (laag 3)."},
+{type:"mc",q:"Wat is een routeringstabel?",o:["Een tabel met MAC-adressen","Een tabel met bekende netwerken en de bijbehorende uitgangsinterface of next-hop router","Een ARP-tabel","Een VLAN-tabel"],c:[1],h:"De routeringstabel bepaalt: voor dit bestemmingsnetwerk, gebruik deze route."},
+{type:"mc",q:"Wat is het verschil tussen statische en dynamische routering?",o:["Ze zijn identiek","Statisch = routes manueel geconfigureerd; dynamisch = routes automatisch uitgewisseld via routeringsprotocollen","Dynamisch is altijd trager","Statisch werkt alleen in grote netwerken"],c:[1],h:"Statisch = manueel, eenvoudig maar onflexibel. Dynamisch = automatisch, schaalbaar maar complexer."},
+{type:"mc",q:"Wat is een default route?",o:["De snelste route naar een bestemming","Een route die wordt gebruikt als er geen specifiekere route bestaat — 'de uitgang als je het niet weet'","De route naar het lokale netwerk","Een back-up route"],c:[1],h:"0.0.0.0/0 = default route. Als niets anders matcht: ga hier naartoe."},
+{type:"mc",q:"Wat is 'longest prefix match' in routering?",o:["De router kiest altijd de kortste route","De router kiest de route met het meest specifieke subnetmasker (langste prefix) dat overeenkomt met het bestemmingsadres","De router kiest de route met de laagste metric","De router kiest de eerste overeenkomende route"],c:[1],h:"Specifiekere route wint altijd. /24 wint van /16 als beide overeenkomen met het bestemmingsadres."},
+{type:"mc",q:"Wat is OSPF?",o:["Een type VPN-protocol","Open Shortest Path First — een link-state routeringsprotocol dat de kortste paden berekent via Dijkstra's algoritme","Een DHCP-variant","Een type VLAN-protocol"],c:[1],h:"OSPF = open standaard, link-state, intern routeringsprotocol (IGP)."},
+{type:"multi",q:"Welke zijn Interior Gateway Protocols (IGP)? (meerdere antwoorden)",o:["OSPF","RIP","EIGRP","BGP","IS-IS"],c:[0,1,2,4],h:"BGP is een Exterior Gateway Protocol (EGP) — gebruikt tussen autonome systemen op het internet."},
+{type:"mc",q:"Wat is het verschil tussen een Layer 2 en Layer 3 switch?",o:["Een Layer 3 switch heeft meer poorten","Een Layer 2 switch werkt enkel op MAC-adressen; een Layer 3 switch heeft ook routeringsfunctionaliteit en werkt op IP","Een Layer 2 switch is sneller","Een Layer 3 switch is ook een firewall"],c:[1],h:"L3 switch = switch + router. Intern: ASIC-gebaseerd routing is veel sneller dan een traditionele router."},
+{type:"mc",q:"Wat is een 'choke point' in een netwerktopologie?",o:["Een kwetsbaar punt","Een geforceerd doorvoerpunt waar al het verkeer langs moet, ideaal voor filtering en monitoring","Een backup-router","Een redundante verbinding"],c:[1],h:"Choke point = bewust één punt creëren. Alle verkeer langs één punt = makkelijker te monitoren."},
+{type:"mc",q:"Wat is port security op een switch?",o:["Het beveiligen van de switch-behuizing","Een feature die het aantal en de identiteit van MAC-adressen per poort beperkt — blokkeert onbevoegde apparaten","Een type VLAN","Een firewall op de switch"],c:[1],h:"Port security = slechts X MAC-adressen mogen op deze poort verschijnen."},
+{type:"mc",q:"Wat is 802.1X?",o:["De VLAN-tagging standaard","Een IEEE-standaard voor port-based Network Access Control — vereist authenticatie voor netwerktoegang","Een STP-variant","Een type Wi-Fi-beveiliging"],c:[1],h:"802.1X = authenticeer jezelf voor je het netwerk betreedt. Gebruikt EAP en een RADIUS-server."},
+{type:"mc",q:"Wat is een ACL (Access Control List) op een router?",o:["Een lijst van gebruikers","Een reeks regels die bepalen welk verkeer door een router-interface wordt toegelaten of geblokkeerd op basis van IP-adressen en poortnummers","Een routeringstabel","Een VLAN-toewijzing"],c:[1],h:"ACL = filterregels op de router. Standard ACL filtert op source IP; Extended ACL op meer criteria."},
+{type:"mc",q:"Wat is het verschil tussen een Standard en Extended ACL?",o:["Ze zijn identiek","Standard ACL filtert alleen op bron-IP; Extended ACL filtert op bron-IP, doel-IP, protocol en poort","Extended ACL is verouderd","Standard ACL is complexer"],c:[1],h:"Extended = meer parameters. Meer controle maar ook meer complex."},
+{type:"mc",q:"Hoe beveilig je de console-poort van een switch?",o:["Via een VLAN","Via een wachtwoord op de console-lijn (line console 0 → password → login)","Via SSH","Via een ACL"],c:[1],h:"Console = fysieke toegang. Beveilig met een wachtwoord op de console-lijn."},
+{type:"open",q:"Welk protocol gebruik je voor beveiligde remote toegang tot een switch of router in plaats van Telnet?",ans:["ssh","secure shell"],h:"Het vervangt Telnet omdat het al het verkeer versleutelt."},
+{type:"mc",q:"Waarom is Telnet onveilig voor switch/router-beheer?",o:["Telnet is te traag","Telnet stuurt alle data inclusief wachtwoorden in plaintext — afluisterbaar via MitM of sniffing","Telnet werkt niet op moderne hardware","Telnet heeft geen authenticatie"],c:[1],h:"Plaintext = onversleuteld. Alles wat je typt is leesbaar voor iemand op het netwerk."},
+{type:"mc",q:"Wat is VLAN hopping?",o:["Het wisselen van VLAN voor een apparaat","Een aanval waarbij een aanvaller toegang krijgt tot een ander VLAN zonder autorisatie, bijv. via double tagging","Het samenvoegen van twee VLANs","Een type inter-VLAN routing"],c:[1],h:"VLAN hopping = beveiligingsprobleem. Schaf het native VLAN af of gebruik VLAN 999 als unused native VLAN."},
+{type:"multi",q:"Welke maatregelen neem je om een switch te beveiligen? (meerdere antwoorden)",o:["Poorten niet in gebruik uitschakelen","Default wachtwoorden wijzigen","VLAN 1 als management VLAN vermijden","Telnet vervangen door SSH","Alle wachtwoorden in plaintext opslaan"],c:[0,1,2,3],h:"Eén optie is een ernstige beveiligingsfout die je juist moet vermijden."},
+{type:"mc",q:"Een apparaat stuurt een frame naar MAC ff:ff:ff:ff:ff:ff. Wat doet de switch?",o:["Het frame wordt weggegooid","Het frame wordt geflooded naar alle poorten behalve de inkomende","Het frame wordt naar de router gestuurd","Het frame wordt teruggestuurd"],c:[1],h:"ff:ff:ff:ff:ff:ff = broadcast MAC-adres. Broadcasts gaan naar iedereen."},
+{type:"mc",q:"Twee apparaten in hetzelfde VLAN maar op verschillende switches communiceren. Wat is nodig?",o:["Een router","Een trunk-link tussen de twee switches die het VLAN draagt","Een aparte switch","Een DHCP-server"],c:[1],h:"VLAN-verkeer over meerdere switches = trunk-link nodig met 802.1Q tagging."},
+{type:"mc",q:"Een apparaat in VLAN 10 wil communiceren met een apparaat in VLAN 20. Wat is nodig?",o:["Niets — VLANs kunnen altijd direct communiceren","Een router of Layer 3 switch voor inter-VLAN routing","Een trunk-poort","Een extra switch"],c:[1],h:"VLANs zijn gescheiden. Voor communicatie tussen VLANs is laag 3 (routering) nodig."},
+{type:"mc",q:"Een switch-poort blijft in Blocking-state ondanks dat er een apparaat op aangesloten is. Wat is de meest waarschijnlijke oorzaak?",o:["De switch heeft geen stroom","STP heeft deze poort geblokkeerd om een lus te voorkomen — activeer PortFast als het een access-poort is","De poort is kapot","VLAN is verkeerd geconfigureerd"],c:[1],h:"Blocking = STP doet zijn werk. PortFast slaat de wachttijd over voor eindapparatuur-poorten."},
+{type:"mc",q:"Je hebt 3 switches in een ring verbonden. Wat is het gevaar en hoe los STP dit op?",o:["Geen gevaar","Lus-gevaar: broadcasts circuleren oneindig. STP detecteert de lus en blokkeert één redundante poort","Snelheidsproblemen","IP-conflicten"],c:[1],h:"Ring = redundantie + lus. STP blokkeert één pad zodat er geen lus is maar redundantie bewaard blijft."},
+{type:"mc",q:"Een DHCP-server staat in VLAN 100. Clients staan in VLAN 10 en 20. Hoe bereiken de clients de DHCP-server?",o:["Rechtstreeks via VLAN-doorgang","Via een DHCP relay agent geconfigureerd op de router of L3-switch","Via een apart netwerk","Dit is niet mogelijk"],c:[1],h:"DHCP gebruikt broadcasts die VLAN-grenzen niet oversteken. Relay agent stuurt het door als unicast."},
+{type:"mc",q:"Je configureert een router-on-a-stick voor VLANs 10 en 20. Hoeveel fysieke interfaces heb je minimaal nodig op de router?",o:["Twee (één per VLAN)","Eén (met twee sub-interfaces)","Drie (één per VLAN + één voor management)","Vier"],c:[1],h:"Router-on-a-stick = één fysieke interface met meerdere sub-interfaces (bijv. G0/0.10 en G0/0.20)."},
+{type:"mc",q:"Een aanvaller sluit een onbeheerde switch aan op een bedrijfsnetwerk. Welk gevaar brengt dit mee voor STP?",o:["Geen gevaar","De onbeheerde switch kan hogere STP-prioriteit claimen en root bridge worden, waarna verkeer via de aanvaller stroomt","Het netwerk vertraagt","IP-conflicten ontstaan"],c:[1],h:"STP mangling: de aanvaller manipuleert STP om root bridge te worden. BPDU Guard beschermt hiertegen."},
+{type:"mc",q:"Wat is de function van een 'uplink' poort op een switch?",o:["Een poort voor draadloze apparaten","Een hogere-capaciteits poort voor verbindingen tussen switches of naar de kern van het netwerk","Een poort enkel voor servers","Een PoE-poort"],c:[1],h:"Uplink = naar boven in de hiërarchie. Typisch hogere snelheid (1G of 10G) voor aggregatie."},
+{type:"mc",q:"Welk commando geeft je op een Cisco switch een overzicht van alle VLANs?",o:["show ip route","show vlan brief","show mac address-table","show interfaces trunk"],c:[1],h:"'show vlan brief' toont alle geconfigureerde VLANs met hun naam en member-poorten."},
+{type:"open",q:"Wat is de default STP bridge prioriteit op Cisco switches?",ans:["32768"],h:"Het is een macht van 2, namelijk 2 tot de 15de macht."},
+{type:"mc",q:"Wat doet het commando 'switchport mode trunk' op een Cisco switch?",o:["Schakelt de poort in access mode","Configureert de poort als trunk — draagt verkeer van meerdere VLANs met 802.1Q tagging","Schakelt STP uit op de poort","Configureert de poort als management interface"],c:[1],h:"Trunk mode = meerdere VLANs via één fysieke link met VLAN-tags."},
+{type:"mc",q:"Welk commando gebruik je om een VLAN aan te maken op een Cisco switch?",o:["create vlan 10","vlan 10 (in global config mode)","add vlan 10","interface vlan 10"],c:[1],h:"In globale configuratiemodus: 'vlan 10' gevolgd door optioneel 'name [naam]'."},
+{type:"mc",q:"Wat is een floating static route?",o:["Een route die automatisch wordt berekend","Een back-up statische route met hogere administrative distance die enkel actief wordt als de primaire route wegvalt","Een type dynamische route","Een route zonder next-hop"],c:[1],h:"Floating static = hogere AD dan de primaire route. Blijft 'zweven' tot de primaire verdwijnt."},
+{type:"mc",q:"Wat is administrative distance (AD)?",o:["De afstand in meters van de router","Een waarde die de betrouwbaarheid van een routeringsbron aangeeft — lagere AD = hogere voorkeur","De kost van een route","De bandbreedte van een link"],c:[1],h:"AD: Connected=0, Static=1, OSPF=110, RIP=120. Lagere waarde = meer vertrouwd."},
+{type:"mc",q:"Wat is een 'metric' in routeringsprotocollen?",o:["De AD van een route","De waarde die bepaalt welke route het beste is als er meerdere routes naar hetzelfde netwerk zijn","De routeringstabelgrootte","De verwerkingskracht van de router"],c:[1],h:"Metric = hoe goed is deze route? OSPF gebruikt cost (bandbreedte), RIP gebruikt hop count."},
+{type:"mc",q:"Wat is de metric die OSPF gebruikt?",o:["Hop count","Cost — gebaseerd op bandbreedte van de link (hogere bandbreedte = lagere cost)","Delay","MTU"],c:[1],h:"OSPF cost = 100Mbps / link_bandbreedte. Gigabit link (1Gbps) = cost 1. FastEthernet (100Mbps) = cost 1."},
+{type:"mc",q:"Wat is de metric die RIP gebruikt?",o:["Cost","Delay","Hop count — maximaal 15 hops, hop 16 = onbereikbaar","Bandbreedte"],c:[2],h:"RIP = telroutes. Meer dan 15 routers tussen bron en doel = onbereikbaar. Limiteert netwerkomvang."},
+{type:"mc",q:"Wat is een 'routing loop' en hoe voorkomen routeringsprotocollen dit?",o:["Een type STP-probleem","Pakketten die oneindig rondcirkelen — voorkomen via split horizon, route poisoning en hold-down timers","Een type broadcast storm","Een type VLAN-probleem"],c:[1],h:"Routing loop = circular: A→B→C→A→... Pakketten reizen nooit aan. TTL beperkt de schade."},
+{type:"mc",q:"Wat is 'split horizon'?",o:["Een type STP-beveiliging","Een RIP-regel: stuur geen route-informatie terug via de interface waarlangs je die informatie ontvangen hebt","Een type VLAN-techniek","Een type NAT-configuratie"],c:[1],h:"Split horizon = stuur niet terug waar je het vandaan hebt. Voorkomt eenvoudige routing loops."},
+{type:"mc",q:"Wat is EIGRP?",o:["Een open standaard routeringsprotocol","Een Cisco-proprietary advanced distance-vector routeringsprotocol dat bandbreedte, delay, load en reliability als metric gebruikt","Een type spanning tree protocol","Een type VLAN-protocol"],c:[1],h:"EIGRP = Cisco's eigen protocol. Combineert distance-vector en link-state eigenschappen. Zeer snel convergerend."},
+{type:"mc",q:"Wat is BGP en waar wordt het gebruikt?",o:["Een intern routeringsprotocol","Border Gateway Protocol — het routeringsprotocol van het internet dat verkeer route tussen autonome systemen","Een type VLAN-protocol","Een type STP-variant"],c:[1],h:"BGP = het 'ruggengraat'-protocol van het internet. Elke ISP spreekt BGP met andere ISPs."},
+{type:"mc",q:"Wat is een autonome systeem (AS) in routering?",o:["Een zelfstandige router","Een netwerk of groep netwerken onder één enkel administratief beheer met een gemeenschappelijk routeringsbeleid","Een type VLAN","Een type subnet"],c:[1],h:"AS = één administratieve eenheid. Bedrijven en ISPs hebben elk hun eigen AS-nummer."},
+{type:"mc",q:"Wat is VLSM (Variable Length Subnet Masking)?",o:["Een type VLAN-techniek","Het gebruik van verschillende subnetmaskers voor subnetten van hetzelfde netwerk om IP-adressen efficiënt te verdelen","Een type NAT","Een type routeringsprotocol"],c:[1],h:"VLSM = flexibele subnetting. /30 voor point-to-point links, /24 voor kantoren — optimaal adresgebruik."},
+{type:"mc",q:"Wat is subnetting?",o:["Het samenvoegen van netwerken","Het verdelen van een netwerk in kleinere subnetwerken door bits van het host-gedeelte te 'lenen' voor het netwerk-gedeelte","Een type VLAN","Een type NAT"],c:[1],h:"Subnetten = opdelen. Eén groot /16 netwerk opdelen in 256 /24 subnetten voor verschillende afdelingen."},
+{type:"mc",q:"Wat is het doel van CIDR (Classless Inter-Domain Routing)?",o:["Een type routeringsprotocol","Flexibele IP-adressering zonder vaste klassen (A/B/C) — maakt efficiëntere adresverdeling en route aggregatie mogelijk","Een type NAT","Een type VLAN"],c:[1],h:"CIDR = voorbij de klassen. /22 in plaats van altijd /8, /16 of /24. Meer flexibiliteit, minder verspilling."},
+{type:"mc",q:"Wat is route summarization (route aggregation)?",o:["Het uitbreiden van een route","Het samenvatten van meerdere specifieke routes in één minder specifieke route — verkleint routeringstabellen","Een type NAT","Een type VLAN"],c:[1],h:"10.0.0.0/24, 10.0.1.0/24, 10.0.2.0/24, 10.0.3.0/24 → samengevat als 10.0.0.0/22."},
+{type:"mc",q:"Wat is een point-to-point link en welk subnetmasker gebruik je typisch?",o:["Een verbinding voor veel hosts, /24","Een directe verbinding tussen twee routers — /30 of /31 omdat je slechts twee adressen nodig hebt","Een type VLAN","Een type trunk"],c:[1],h:"/30 = 4 adressen: netwerk, 2 hosts, broadcast. /31 = 2 adressen voor point-to-point (RFC 3021)."},
+{type:"mc",q:"Wat is een loopback interface op een router?",o:["Een interface voor lokaal verkeer","Een virtuele interface zonder fysieke kabel die altijd actief is — nuttig als router-ID, management interface en voor testen","Een type VLAN-interface","Een type trunk-interface"],c:[1],h:"Loopback = altijd Up/Up. Ideaal als stabiele router-ID voor OSPF/BGP en als management-adres."},
+{type:"mc",q:"Wat is OSPF Area 0?",o:["Een optioneel OSPF-gebied","De backbone area van OSPF — alle andere areas moeten direct of via virtual links verbonden zijn met area 0","Een type OSPF-configuratie","Een type AS"],c:[1],h:"Area 0 = het centrum. Alle inter-area verkeer loopt via area 0. Vergelijkbaar met een hub-and-spoke."},
+{type:"mc",q:"Wat is een OSPF designated router (DR)?",o:["De router met de meeste routes","Op een multi-access netwerk (bijv. Ethernet) de router die als centraal punt fungeert voor LSA-uitwisseling — vermindert OSPF-overhead","De root bridge van OSPF","De router met het laagste router-ID"],c:[1],h:"DR/BDR = efficiëntie op shared media. Niet elke router praat met elke andere — enkel met DR/BDR."},
+{type:"mc",q:"Wat is een 'hello packet' in OSPF?",o:["Een type ICMP-bericht","Een OSPF-pakket dat periodiek verstuurd wordt om neighborships te onderhouden en dead intervals te detecteren","Een type ARP-bericht","Een type STP-bericht"],c:[1],h:"Hello = ik leef nog. OSPF neighbors verwachten regelmatig hello-pakketten. Geen hello = link dood."},
+{type:"mc",q:"Wat is een OSPF neighbour relationship?",o:["Een type VLAN-relatie","Een bijdirectionale OSPF-communicatierelatie tussen twee routers die OSPF hello-pakketten uitwisselen via een gedeelde interface","Een type BGP-sessie","Een type STP-relatie"],c:[1],h:"Neighbor = OSPF-partner. Neighbors wisselen LSAs (topologie-informatie) uit."},
+{type:"mc",q:"Wat is een LSA (Link State Advertisement) in OSPF?",o:["Een type ARP-aankondiging","Een pakket dat topologie-informatie bevat die OSPF routers uitwisselen om hun netwerktopologie te synchroniseren","Een type BGP-update","Een type SNMP-trap"],c:[1],h:"LSA = bouwsteen van de OSPF topologie-database. Elke router kent alle LSAs in zijn area."},
+{type:"mc",q:"Wat is een routing table vs. een forwarding table?",o:["Ze zijn identiek","Routing table = logische weergave van bekende netwerken; forwarding table = geoptimaliseerde hardware-tabel voor snelle pakketdoorstuur","Forwarding table is groter","Routing table is in hardware"],c:[1],h:"Routing table = software (show ip route). Forwarding table = hardware (CEF/FIB) voor lijnsnelheid forwarding."},
+{type:"mc",q:"Wat is Cisco Express Forwarding (CEF)?",o:["Een type routeringsprotocol","Een Cisco hardware-acceleratietechnologie die een FIB en adjacency table gebruikt voor lijnsnelheid pakketdoorstuur","Een type STP","Een type VLAN"],c:[1],h:"CEF = fast forwarding. De router hoeft niet elke route-opzoeking software-matig te doen."},
+{type:"mc",q:"Wat is een 'null route' of 'black hole route'?",o:["Een route zonder bestemming","Een route die pakketten weggooit — nuttig als veiligheidsnet om pakketten naar niet-bestaande bestemmingen te droppen","Een type default route","Een type floating static route"],c:[1],h:"Null0 interface = black hole. ip route 10.0.0.0 255.0.0.0 Null0 = gooi alle pakketten naar dit netwerk weg."},
+{type:"mc",q:"Wat is IP SLA in Cisco-configuratie?",o:["Een type beveiligingspolicy","Een Cisco-feature die continu connectiviteit en performance meet (ping, HTTP, TCP) en acties kan triggeren op basis van resultaten","Een type QoS-functie","Een type VLAN-functie"],c:[1],h:"IP SLA = actieve monitoring vanuit de router. Combineer met floating static routes voor automatische failover."},
+{type:"mc",q:"Wat is QoS (Quality of Service)?",o:["Een type beveiliging","Mechanismen die bepaald verkeer prioriteit geven over het netwerk — essentieel voor VoIP en video","Een type routeringsprotocol","Een type VLAN"],c:[1],h:"QoS = verkeersprioriteit. VoIP-pakketten voor data-backup-pakketten. Latency en jitter minimaliseren."},
+{type:"mc",q:"Wat is DSCP (Differentiated Services Code Point)?",o:["Een type IP-adres","Een 6-bit markering in de IP-header die de QoS-klasse aangeeft voor prioriteitsbehandeling","Een type VLAN-tag","Een type routeringsprotocol"],c:[1],h:"DSCP = QoS-markering in het IP-pakket. EF (46) = hoogste prioriteit voor VoIP. CS0 = standaard."},
+{type:"mc",q:"Wat is MPLS?",o:["Multi-Protocol Link State","Multiprotocol Label Switching — verkeer wordt op basis van labels (niet IP-adressen) doorgestuurd voor hoge snelheid en traffic engineering","Een type VPN","Een type routeringsprotocol"],c:[1],h:"MPLS = label-based forwarding. Sneller dan IP-lookup, nuttig voor grote service provider netwerken."},
+{type:"mc",q:"Wat is een GRE tunnel?",o:["Een type encryptie","Generic Routing Encapsulation — een tunnelprotocol dat pakketten inpakt zodat ze via netwerken kunnen reizen die het originele protocol niet ondersteunen","Een type VPN","Een type VLAN"],c:[1],h:"GRE = generieke tunnel. IPv6 over IPv4 netwerk? GRE tunnel. Multicast over WAN? GRE tunnel."},
+{type:"mc",q:"Wat is het verschil tussen een routed port en een SVI op een L3 switch?",o:["Ze zijn identiek","Routed port = geen VLAN, fungeert als router-interface; SVI (VLAN interface) = virtuele interface voor een VLAN, voor inter-VLAN routing","SVI heeft meer bandbreedte","Routed port ondersteunt meer protocols"],c:[1],h:"SVI (interface VlanX) = de gateway voor hosts in VLAN X. Routed port = verbinding naar andere routers."},
+{type:"mc",q:"Wat is CDP (Cisco Discovery Protocol)?",o:["Een type routeringsprotocol","Een Cisco-proprietary laag 2 protocol dat informatie uitwisselt tussen direct verbonden Cisco-apparaten (interfaces, modellen, OS-versies)","Een type VLAN-protocol","Een type STP-variant"],c:[1],h:"CDP = Cisco-burenprotocol. Zie welke apparaten direct verbonden zijn zonder in te loggen. Schakel uit naar buiten."},
+{type:"mc",q:"Wat is LLDP (Link Layer Discovery Protocol)?",o:["Een type STP","De open standaard equivalent van CDP — laat apparaten van verschillende fabrikanten elkaars informatie uitwisselen","Een type OSPF","Een type VLAN-protocol"],c:[1],h:"LLDP = open CDP-alternatief. IEEE 802.1AB. Werkt ook tussen Cisco en niet-Cisco apparaten."},
+{type:"mc",q:"Wat is port mirroring (SPAN)?",o:["Het dupliceren van een poort","Een switch-feature die al het verkeer van één of meerdere poorten kopieert naar een analyse-poort voor monitoring/troubleshooting","Een type VLAN","Een type trunk"],c:[1],h:"SPAN = maak een kopie van verkeer voor een sniffer. Zie wat er langs gaat zonder het netwerk te onderbreken."},
+{type:"mc",q:"Wat is een EtherChannel (Link Aggregation)?",o:["Een type VLAN","Het bundelen van meerdere fysieke links tot één logische link voor hogere bandbreedte en redundantie","Een type STP-feature","Een type trunk"],c:[1],h:"EtherChannel = 4 × 1Gbps links = 4Gbps logische link. Hoge beschikbaarheid + hogere throughput."},
+{type:"mc",q:"Wat is LACP (Link Aggregation Control Protocol)?",o:["Een type routeringsprotocol","Het open standaard protocol (IEEE 802.3ad) voor automatische negotiatie van EtherChannel-links","Een type STP","Een type VLAN-protocol"],c:[1],h:"LACP = open standaard voor link aggregation. PAgP is Cisco-proprietary equivalent."},
+{type:"mc",q:"Wat is storm control op een switch?",o:["Een type beveiliging tegen DDoS","Een feature die het volume van broadcast, multicast en unicast-verkeer per poort beperkt om storm-situaties te voorkomen","Een type STP-feature","Een type VLAN-functie"],c:[1],h:"Storm control = bescherm het netwerk tegen broadcast storms door een drempelwaarde in te stellen per poort."},
+{type:"mc",q:"Wat is dynamic ARP inspection (DAI)?",o:["Een type ARP-monitoring","Een beveiligingsfunctie die ARP-pakketten valideert via de DHCP snooping binding table om ARP poisoning te voorkomen","Een type VLAN-beveiliging","Een type STP-beveiliging"],c:[1],h:"DAI = valideer ARP-pakketten. Als MAC+IP niet overeenkomt met de DHCP lease database → drop het pakket."},
+{type:"mc",q:"Wat is IP source guard?",o:["Een type firewall","Een beveiligingsfunctie die IP-pakketten valideert op basis van de DHCP snooping binding table om IP-adres spoofing te voorkomen","Een type NAT","Een type VLAN"],c:[1],h:"IP source guard = valideer source IP. Pakketten met onbekend IP op een poort worden gedropped."},
+{type:"mc",q:"Wat is het doel van het 'spanning-tree portfast' commando?",o:["Versnelt STP-convergentie voor alle poorten","Laat de poort onmiddellijk de Forwarding state ingaan zonder de normale STP-states te doorlopen — alleen voor access-poorten met eindapparaten","Schakelt STP uit","Verhoogt de prioriteit van de poort"],c:[1],h:"PortFast = skip Listening/Learning. Direkt Forwarding. Alleen op poorten naar eindapparaten, nooit naar switches!"},
+{type:"mc",q:"Wat is 'show mac address-table' op een Cisco switch?",o:["Toont de routeringstabel","Toont de CAM-table: welke MAC-adressen zijn bekend op welke poorten","Toont de ARP-tabel","Toont de VLAN-configuratie"],c:[1],h:"show mac address-table = kijk in de 'hersenen' van de switch. Nuttig voor troubleshooting."},
+{type:"mc",q:"Wat is een 'wildcard mask' in OSPF en ACLs?",o:["Het inverse van het subnetmasker","Een masker dat aangeeft welke bits van een IP-adres gecontroleerd worden — 0=controleer, 1=negeer (inverse van subnetmasker)","Het subnetmasker zelf","Een type routeringsfilter"],c:[1],h:"Wildcard = inverse subnetmasker. /24 subnetmasker 255.255.255.0 → wildcard 0.0.0.255."},
+{type:"mc",q:"Wat is PVLAN (Private VLAN)?",o:["Een persoonlijk VLAN","Een VLAN-variant die isolatie biedt tussen poorten in hetzelfde VLAN — nuttig voor hosting waar klanten elkaars servers niet mogen bereiken","Een type trunk","Een type management VLAN"],c:[1],h:"PVLAN = isolatie binnen een VLAN. Promiscuous port (router) praat met iedereen; isolated ports niet met elkaar."},
+{type:"mc",q:"Wat is Multi-Chassis EtherChannel (MLAG/vPC)?",o:["EtherChannel over meerdere kabels","EtherChannel waarvan de links verdeed zijn over twee fysiek aparte switches voor maximale redundantie","Een type STP","Een type VLAN"],c:[1],h:"MLAG/vPC = EtherChannel over twee switches. Geen single point of failure. Switch A falt? Switch B neemt over."},
+{type:"mc",q:"Wat is het commando 'show ip route' op een Cisco router?",o:["Toont de interfaces","Toont de routeringstabel met alle bekende netwerken en hun next-hop/interface","Toont de ARP-tabel","Toont de OSPF-neighbors"],c:[1],h:"show ip route = de routeringstabel. C=Connected, S=Static, O=OSPF, R=RIP. Essentieel voor troubleshooting."},
+{type:"mc",q:"Wat is 'traceroute' en waarvoor gebruik je het?",o:["Een ping-variant","Een tool die het pad toont dat pakketten volgen van bron naar doel — toont elke hop/router onderweg","Een type monitoring","Een type netwerkscan"],c:[1],h:"Traceroute = volg het pad. Nuttig om te zien waar in het netwerk connectivity wegvalt."},
+{type:"mc",q:"Wat is het TTL-veld in een IP-pakket?",o:["Transporttijd in seconden","Time to Live — een teller die bij elke router met 1 verlaagd wordt; als TTL=0 wordt het pakket weggegooid","De prioriteit van het pakket","De grootte van het pakket"],c:[1],h:"TTL = max router hops. Voorkomt dat pakketten eeuwig rondcirkelen in een routing loop."},
+{type:"mc",q:"Wat is een ARP table op een router?",o:["Een routeringstabel","Een tabel die IP-adressen koppelt aan MAC-adressen van direct verbonden apparaten — nodig voor frame-encapsulatie","Een type VLAN-tabel","Een type CAM-table"],c:[1],h:"ARP table = IP→MAC mapping. De router weet welk MAC-adres bij elk direct verbonden IP-adres hoort."},
+{type:"mc",q:"Wat is het verschil tussen unicast, multicast en broadcast?",o:["Ze zijn identiek","Unicast = één ontvanger; multicast = groep ontvangers die zich ingeschreven hebben; broadcast = alle apparaten in het broadcast-domein","Broadcast = één ontvanger; unicast = iedereen","Multicast = alle ontvangers"],c:[1],h:"Unicast: één-op-één. Multicast: één-op-groep (efficiënter dan broadcast). Broadcast: één-op-allen."},
+{type:"mc",q:"Wat is IGMP (Internet Group Management Protocol)?",o:["Een type routeringsprotocol","Een protocol waarmee hosts zichzelf inschrijven bij en uitschrijven uit multicast-groepen","Een type STP","Een type VLAN-protocol"],c:[1],h:"IGMP = multicast group management. Routers gebruiken IGMP om te weten welke hosts welke multicast-streams willen."},
+{type:"mc",q:"Wat is een 'access list' op een router en wat is de standaard actie?",o:["Een lijst van toegestane gebruikers","Een reeks permit/deny regels voor IP-verkeer — de impliciete standaard actie is DENY (alle niet-gematched verkeer wordt geweigerd)","Een type routeringsfilter","Een type VLAN-toewijzing"],c:[1],h:"ACL heeft altijd een impliciete 'deny all' aan het einde. Vergeet je een permit → alles geblokkeerd."},
+{type:"mc",q:"Wat is het verschil tussen inbound en outbound ACL toepassing op een interface?",o:["Er is geen verschil","Inbound: filtert verkeer dat de interface INKOMT; Outbound: filtert verkeer dat de interface VERLAAT","Outbound is efficiënter","Inbound werkt niet op routers"],c:[1],h:"Inbound ACL = verkeer dat de router binnenkomt. Outbound = verkeer dat de router verlaat. Locatie bepaalt efficiency."},
+{type:"mc",q:"Wat is een 'standard numbered ACL' op Cisco?",o:["ACL nummer 100-199","ACL nummer 1-99 die filtert op ALLEEN source IP-adres","Een type extended ACL","Een type named ACL"],c:[1],h:"Standard ACL (1-99) = enkel source IP. Extended ACL (100-199) = source+dest IP, protocol, poort."},
+{type:"mc",q:"Wat is een 'named ACL'?",o:["Een ACL met een naam","Een ACL die aangeduid wordt met een naam in plaats van een nummer — makkelijker te beheren en bevat ook sequence numbers voor rij-aanpassing","Een type standaard ACL","Een type extended ACL"],c:[1],h:"Named ACL = onderhoudsvriendelijk. Je kunt regels toevoegen/verwijderen op specifieke posities via sequence numbers."},
+{type:"mc",q:"Wat is het RFC 1918-adresruimte?",o:["Publieke IP-adressen","Privé IP-adressen die niet routeerbaar zijn op het internet: 10.x.x.x, 172.16-31.x.x, 192.168.x.x","IPv6-adressen","Multicast-adressen"],c:[1],h:"RFC 1918 = privé-adressen. Achter NAT zijn miljoenen apparaten met 192.168.x.x adressen."},
+{type:"mc",q:"Wat is IPv6 en welk probleem lost het op?",o:["Een nieuwe versie van OSPF","De opvolger van IPv4 met 128-bit adressen die het adresuitputtingsprobleem van IPv4 (32-bit) oplost","Een type routeringsprotocol","Een type VPN"],c:[1],h:"IPv6 = 128-bit = 340 undeciljoen adressen. IPv4 had 4.3 miljard adressen — uitgeput in 2011."},
+{type:"mc",q:"Wat is een IPv6 link-local adres?",o:["Een publiek IPv6-adres","Een automatisch geconfigureerd IPv6-adres geldig enkel op het lokale netwerksegment (prefix fe80::/10) — nodig voor NDP","Een type multicast-adres","Een type anycast-adres"],c:[1],h:"Link-local = FE80::/10. Automatisch geconfigureerd op elke IPv6-interface. Niet routeerbaar."},
+{type:"mc",q:"Wat is NDP (Neighbor Discovery Protocol) in IPv6?",o:["Een type routeringsprotocol","Het IPv6-equivalent van ARP — ontdekt buren, resolveert MAC-adressen en detecteert duplicate adressen","Een type DNS-protocol","Een type DHCP-protocol"],c:[1],h:"NDP = ARP voor IPv6. Gebruikt multicast i.p.v. broadcast. Ook voor router discovery en SLAAC."},
+{type:"mc",q:"Wat is SLAAC (Stateless Address Autoconfiguration) in IPv6?",o:["Een type DHCP","Een mechanisme waarbij IPv6-apparaten zichzelf automatisch configureren op basis van router advertisements zonder DHCPv6-server","Een type NDP-functie","Een type routeringsprotocol"],c:[1],h:"SLAAC = zelfconfiguratie. Router advertiseert prefix → apparaat combineert met zijn EUI-64 MAC → volledig adres."},
+{type:"mc",q:"Wat is het verschil tussen router advertisement en router solicitation in NDP?",o:["Ze zijn identiek","Router advertisement (RA): router stuurt prefix-info; Router solicitation (RS): host vraagt om een RA","RS is van router; RA van host","RA is ouder dan RS"],c:[1],h:"Host stuurt RS → router reageert met RA → host configureert zijn adres via SLAAC."},
+{type:"mc",q:"Wat is het doel van 'show interfaces' op een Cisco switch/router?",o:["Toont de routeringstabel","Toont gedetailleerde informatie over alle interfaces: status, errors, bandbreedte, input/output statistieken","Toont de VLAN-tabel","Toont de ARP-tabel"],c:[1],h:"show interfaces = alles over een interface. Input errors, CRC errors, collisions — essentieel voor troubleshooting."},
+{type:"mc",q:"Wat is een 'duplex mismatch' en wat veroorzaakt het?",o:["Een type IP-conflict","Een configuratieprobleem waarbij één kant full-duplex en de andere kant half-duplex gebruikt — veroorzaakt collisions en slechte prestaties","Een type VLAN-conflict","Een type STP-probleem"],c:[1],h:"Duplex mismatch = de meest voorkomende performance-oorzaak op schakellinks. Stel duplex altijd expliciet in."},
+{type:"mc",q:"Wat is een 'speed mismatch' op een switch-poort?",o:["Twee switches met verschillende modellen","Wanneer beide kanten van een link verschillende snelheden proberen te gebruiken — de verbinding komt niet op of werkt slecht","Een type duplex-probleem","Een type VLAN-conflict"],c:[1],h:"Speed mismatch = geen verbinding of terugval naar lagere snelheid. Zet speed en duplex altijd handmatig."},
+{type:"mc",q:"Wat is het commando om een VLAN naam te geven op een Cisco switch?",o:["vlan 10 name Verkoop","In VLAN configuratiemodus: name Verkoop — na het commando 'vlan 10' in global config","interface vlan 10 name Verkoop","switchport name Verkoop"],c:[1],h:"vlan 10 → name Verkoop. De naam maakt VLANs herkenbaar in show vlan brief output."},
+{type:"mc",q:"Wat is een 'management VLAN' en waarom gebruik je niet VLAN 1?",o:["Het VLAN voor eindgebruikers","Het VLAN voor beheerverkeer naar switches — gebruik nooit VLAN 1 omdat het het default VLAN is met minder beveiliging","Het VLAN voor VoIP","Het VLAN voor servers"],c:[1],h:"VLAN 1 = default, onbeheerd, verkeer loopt er standaard op. Gebruik een apart management VLAN voor beveiliging."},
+{type:"mc",q:"Wat is 'VLAN pruning' in VTP?",o:["Het verwijderen van VLANs","Het automatisch beperken van VLAN-verkeer op trunk-links tot enkel de VLANs die actieve hosts hebben op de ontvangende switch","Een type VLAN-beveiliging","Een type trunk-configuratie"],c:[1],h:"Pruning = stuur geen onnodig VLAN-verkeer over trunks. Als een switch geen hosts heeft in VLAN X, stuur VLAN X niet."},
+{type:"mc",q:"Wat is het commando om een trunk-poort te configureren op een Cisco switch?",o:["switchport mode trunk","interface trunk","vlan trunk enable","set trunk on"],c:[0],h:"switchport mode trunk → alle VLANs zijn toegestaan op de trunk (tenzij beperkt via allowed VLANs)."},
+{type:"mc",q:"Wat is 'allowed VLANs' op een trunk-poort?",o:["VLANs die verboden zijn","Een configuratie die bepaalt welke VLANs er over een specifieke trunk-link mogen worden gestuurd","Een type VLAN-tagging","Een type VTP-configuratie"],c:[1],h:"switchport trunk allowed vlan 10,20,30 = stuur enkel deze VLANs over deze trunk. Beter dan alles toestaan."},
+{type:"mc",q:"Wat is een 'sub-interface' op een Cisco router voor inter-VLAN routing?",o:["Een back-up interface","Een virtuele interface op een fysieke interface (bijv. G0/0.10) geconfigureerd met encapsulation dot1Q voor één specifiek VLAN","Een type loopback","Een type VLAN-interface"],c:[1],h:"G0/0.10 met 'encapsulation dot1Q 10' + IP-adres = de gateway voor VLAN 10. Router-on-a-stick."},
+{type:"mc",q:"Wat is het doel van 'no ip domain-lookup' op een Cisco router?",o:["Schakelt DNS uit","Voorkomt dat de router DNS-lookups uitvoert als je een typo maakt in een commando — vermijdt lange wachttijden","Schakelt DHCP uit","Configureert de DNS-server"],c:[1],h:"Zonder no ip domain-lookup: typfout in commando → router zoekt 10 seconden naar een DNS-naam. Irritant bij configuratie."},
+{type:"mc",q:"Wat doet 'ip helper-address' op een router?",o:["Configureert een statische route","Converteert DHCP-broadcasts naar unicasts en stuurt ze door naar een DHCP-server in een ander subnet","Configureert een DNS-helper","Configureert een NAT-regel"],c:[1],h:"ip helper-address = DHCP relay. Broadcasts reizen niet over routers — helper-address stuurt ze door als unicast."},
+{type:"mc",q:"Welk commando configureer je een statische route op Cisco?",o:["route add 10.0.0.0 255.0.0.0 192.168.1.1","ip route 10.0.0.0 255.0.0.0 192.168.1.1","static route 10.0.0.0/8 next-hop 192.168.1.1","add route 10.0.0.0 mask 255.0.0.0 via 192.168.1.1"],c:[1],h:"ip route NETWERK MASKER NEXT-HOP — de standaard Cisco syntax voor statische routes."},
+{type:"mc",q:"Wat is 'eigrp stub' configuratie?",o:["Een type EIGRP-beveiliging","Een EIGRP-feature die een router aangeeft als stub (eindpunt) zodat hij geen transit-verkeer verwerkt — vermindert query-overhead","Een type OSPF-configuratie","Een type BGP-configuratie"],c:[1],h:"EIGRP stub = remote kantoor configuratie. De hub hoeft geen queries te sturen naar stub-routers voor netwerken elders."},
+{type:"mc",q:"Wat is een 'passive interface' in OSPF/EIGRP?",o:["Een interface die geen verkeer verstuurt","Een interface die OSPF/EIGRP-hello's onderdrukt — vermijdt dat onnodige neighbor relationships worden gevormd op netwerken zonder routers","Een uitgeschakelde interface","Een type loopback interface"],c:[1],h:"Passive interface = stuur geen hellos, adverteer het netwerk wel. Gebruik op interfaces naar eindapparaten."},
+{type:"mc",q:"Wat is 'BFD' (Bidirectional Forwarding Detection)?",o:["Een type spanning tree protocol","Een snel link-failure detectieprotocol dat binnen milliseconden failover triggert — werkt samen met routeringsprotocollen","Een type VLAN-protocol","Een type QoS-protocol"],c:[1],h:"BFD = super-snelle link-detectie. Zonder BFD duurt OSPF dead-timer 40 seconden. Met BFD: sub-seconde failover."},
+{type:"mc",q:"Wat is het verschil tussen een 'distance-vector' en 'link-state' routeringsprotocol?",o:["Ze zijn identiek","Distance-vector: routert op basis van richting+afstand, kent enkel buren; Link-state: bouwt volledige topologiekaart, berekent kortste pad","Link-state is altijd trager","Distance-vector gebruikt meer bandbreedte"],c:[1],h:"RIP = distance-vector. OSPF = link-state. Link-state convergeert sneller maar gebruikt meer CPU/geheugen."},
+{type:"mc",q:"Wat is 'triggered update' in RIP?",o:["Een type RIP-beveiliging","Een onmiddellijke route-update gestuurd wanneer een topologiewijziging optreedt — versnelt convergentie boven de normale 30-seconden timer","Een type RIP-timer","Een type OSPF-update"],c:[1],h:"Triggered update = stuur meteen, wacht niet op de 30-seconden timer. Snellere convergentie bij failover."},
+{type:"mc",q:"Wat is 'route redistribution'?",o:["Het kopiëren van routes","Het uitwisselen van routing-informatie tussen twee verschillende routeringsprotocollen, bijv. OSPF-routes importeren in EIGRP","Een type statische route","Een type route-samenvatting"],c:[1],h:"Redistributie = vertaal routes tussen protocollen. OSPF leert niets van EIGRP zonder redistributie."},
+{type:"mc",q:"Wat is een 'routing domain'?",o:["Een type VLAN","Een groep routers die hetzelfde routeringsprotocol en -beleid gebruiken","Een type subnet","Een type AS"],c:[1],h:"Routing domain = één protocol, één beheer. Grenzen worden bepaald door redistribute commando's."},
+{type:"mc",q:"Wat is het verschil tussen 'shutdown' en 'no shutdown' op een interface?",o:["Ze zijn identiek","shutdown = schakel de interface administratief uit; no shutdown = activeer de interface","no shutdown schakelt de interface uit","shutdown verwijdert de interface"],c:[1],h:"Nieuwe interfaces zijn standaard 'shutdown' op Cisco routers. 'no shutdown' activeert ze."},
+{type:"mc",q:"Wat is 'show running-config' op een Cisco apparaat?",o:["Toont de opgeslagen configuratie","Toont de actieve configuratie in RAM — de huidige werkende configuratie","Toont de routeringstabel","Toont de interface-status"],c:[1],h:"Running-config = actuele config. Startup-config = opgeslagen config. 'copy run start' slaat running op."},
+{type:"mc",q:"Hoe sla je de configuratie op op een Cisco apparaat?",o:["save config","write memory (of copy running-config startup-config)","commit config","store config"],c:[1],h:"write memory OF copy run start = sla de actieve configuratie op zodat ze na reboot bewaard blijft."},
+{type:"mc",q:"Wat is 'NVRAM' op een Cisco router?",o:["Een type RAM-geheugen","Non-Volatile RAM — slaat de startup-config op die bewaard blijft na stroomuitval","Een type flash-geheugen","Een type ROM"],c:[1],h:"NVRAM = startup-config opslag. Flash = IOS image opslag. RAM = running-config (tijdelijk)."},
+{type:"mc",q:"Wat is het verschil tussen 'running-config' en 'startup-config'?",o:["Ze zijn identiek","Running-config = actieve config in RAM (verloren bij reboot zonder save); startup-config = opgeslagen in NVRAM (bewaard na reboot)","Startup-config is in RAM","Running-config is permanent"],c:[1],h:"Vergeet te saven? Na reboot is je config weg. Altijd 'wr mem' na configuratiewijzigingen!"},
+{type:"mc",q:"Wat is 'erase startup-config' op een Cisco apparaat?",o:["Verwijdert de running-config","Verwijdert de opgeslagen startup-config in NVRAM — na reboot start het apparaat met factory defaults","Herstelt de config","Verwijdert het IOS"],c:[1],h:"Erase startup-config = factory reset. Na reload start het apparaat met het initiële setup-dialoog."},
+{type:"mc",q:"Wat is 'OSPF passive-interface default' configuratie?",o:["Maakt alle interfaces passief","Zet alle interfaces als passief en gebruik 'no passive-interface' om specifieke interfaces actief te maken — veiliger dan per interface configureren","Schakelt OSPF uit","Maakt de router een stub"],c:[1],h:"passive-interface default + no passive-interface op specifieke interfaces = beveiligde aanpak. Stuur hellos enkel waar nodig."},
+{type:"mc",q:"Wat is een 'summarize-address' commando in EIGRP?",o:["Berekent het subnetmasker","Configureert route-samenvatting op een interface — meerdere specifieke routes worden geadverteerd als één samengevatte route","Configureert een statische route","Configureert route-redistributie"],c:[1],h:"EIGRP route summarization = verklein de routeringstabel. Bijv. 10.1.0.0/16 tot 10.3.0.0/16 → 10.0.0.0/14."},
+{type:"mc",q:"Wat is het 'area range' commando in OSPF?",o:["Definieert een OSPF-area","Configureert inter-area route-samenvatting op een ABR — samengevatte routes worden naar andere areas geadverteerd","Configureert een stub area","Configureert redistributie"],c:[1],h:"OSPF area range = samenvatting op de ABR (Area Border Router). Verklein het aantal LSAs in andere areas."},
+{type:"mc",q:"Wat is een 'OSPF stub area'?",o:["Een area met één router","Een OSPF-area die geen externe routes ontvangt — de ABR injecteert enkel een default route in de stub area","Een area zonder LSAs","Een area met enkel static routes"],c:[1],h:"Stub area = geen externe LSAs. Routers in de stub gebruiken de default route voor alles buiten het OSPF-domein."},
+{type:"mc",q:"Wat is een 'OSPF totally stubby area'?",o:["Een stub area met extra beveiliging","Een ultra-minimale OSPF-area die enkel een default route ontvangt — geen inter-area of externe routes. Cisco-proprietary.","Een type OSPF NSSA","Een type stub area"],c:[1],h:"Totally stubby = maximale vereenvoudiging. Enkel intra-area routes + één default route. Minimale routeringstabel."},
+{type:"mc",q:"Wat is een 'OSPF NSSA' (Not-So-Stubby Area)?",o:["Een type stub area","Een OSPF stub area die ook externe routes mag importeren via NSSA-externe LSAs — combinatie van stub en redistributie","Een type totally stubby area","Een type backbone area"],c:[1],h:"NSSA = stub maar met externe routes. Bijv. een kantoor met een directe internetverbinding maar min. OSPF-overhead."},
+{type:"mc",q:"Wat is BGP 'path attributes' en waarom zijn ze belangrijk?",o:["Een type routeringsmetric","Eigenschappen van BGP-routes (AS-path, next-hop, MED, local preference) die bepalen welk pad gekozen wordt bij meerdere opties","Een type BGP-policy","Een type BGP-timer"],c:[1],h:"BGP path attributes = de rijkdom van BGP. Verkeersengineering door attributen te manipuleren."},
+{type:"mc",q:"Wat is het BGP 'AS-path' attribuut?",o:["Het pad door de router","Een lijst van autonome systemen die een BGP-route heeft doorkruist — beschermt ook tegen routing loops","Een type metric","Een type preference"],c:[1],h:"AS-path = historiek van het BGP-pad. Langer pad = verder weg. AS-path loop-detectie: eigen AS al in het pad → reject."},
+{type:"mc",q:"Wat is een 'route reflector' in BGP?",o:["Een type router","Een BGP-router die routes reflecteert naar andere iBGP-peers zodat full-mesh iBGP-verbindingen niet nodig zijn","Een type AS","Een type BGP-policy"],c:[1],h:"Route reflector = vereenvoudig iBGP. Zonder RR: n*(n-1)/2 iBGP sessions. Met RR: elke router praat met de RR."},
+{type:"mc",q:"Wat is 'BGP confederation'?",o:["Een groep AS'en","Een alternatieve methode om iBGP-scalabiliteit te verbeteren door een grote AS op te delen in sub-AS'en — alternatie voor route reflectors","Een type BGP-policy","Een type BGP-timer"],c:[1],h:"Confederation = deel één groot AS op in sub-AS'en. Minder full-mesh verbindingen. Minder gebruikt dan route reflectors."},
+{type:"mc",q:"Wat is 'community' in BGP?",o:["Een type AS-group","Een optioneel BGP-attribuut voor het taggen van routes — maakt het mogelijk beleid toe te passen op groepen routes","Een type routeringsmetric","Een type prefix"],c:[1],h:"Community = tag voor routes. Bijv. NO_EXPORT community = adverteer deze route niet buiten dit AS."},
+{type:"mc",q:"Wat is 'MED' (Multi-Exit Discriminator) in BGP?",o:["Een type metric","Een BGP-attribuut dat de voorkeursingang in een AS aangeeft voor een aangrenzend AS — één richting beïnvloeding","Een type community","Een type next-hop"],c:[1],h:"MED = hint aan de buur: gebruik liever DIT pad om in ons AS te komen. Maar de buur kan het negeren."},
+{type:"mc",q:"Wat is 'local preference' in BGP?",o:["Een type metric","Een iBGP-attribuut dat het voorkeurpad voor verlaten van het AS aangeeft — hogere waarde = meer voorkeur","Een type community","Een type MED"],c:[1],h:"Local preference = intern beleid voor uitgang. Hoger = meer voorkeur. Overschrijft MED van buren."},
+{type:"mc",q:"Wat is een 'access-list' op een Cisco router voor BGP-filtering?",o:["Een type BGP-policy","Een filter die bepaalt welke BGP-prefixes geaccepteerd of geadverteerd worden op basis van ACL-regels","Een type route-map","Een type community-list"],c:[1],h:"ACL + distribute-list = filter BGP-routes op prefix. Route-map biedt meer flexibiliteit voor BGP-policies."},
+{type:"mc",q:"Wat is een 'prefix-list' in Cisco routering?",o:["Een type ACL","Een efficiëntere manier dan ACLs om IP-prefixen te filteren — ondersteunt lengtecontrole van subnetmaskers","Een type route-map","Een type community-list"],c:[1],h:"Prefix-list = krachtigere prefix-filter. ip prefix-list TEST permit 10.0.0.0/8 le 24 = alles van /8 tot /24 in 10.0.0.0."},
+{type:"mc",q:"Wat is een 'route-map' in Cisco routering?",o:["Een kaart van routes","Een flexibel policy-instrument voor het aanpassen van route-attributen en het filteren van routes bij redistribution of BGP","Een type ACL","Een type prefix-list"],c:[1],h:"Route-map = conditional match + set attributes. Bijv. match community 100 → set local-preference 200."},
+{type:"mc",q:"Wat is 'DHCP snooping trust'?",o:["Vertrouw alle DHCP-servers","Markeer enkel de switch-poort verbonden met de legitieme DHCP-server als 'trusted' — alle andere poorten zijn untrusted","Vertrouw alle DHCP-clients","Een type VLAN-trust"],c:[1],h:"Trusted port = mag DHCP-antwoorden sturen. Untrusted = mag enkel DHCP-verzoeken sturen. Rogue DHCP blocked."},
+{type:"mc",q:"Wat is het doel van 'BPDU filter' op een PortFast-poort?",o:["Blokkeert alle BPDUs","Voorkomt dat BPDUs verzonden EN ontvangen worden op een poort — gebruik alleen op strikt gecontroleerde poorten","Hetzelfde als BPDU Guard","Versnelt STP-convergentie"],c:[1],h:"BPDU filter = volledig STP-stilte op een poort. Gevaarlijker dan BPDU Guard. BPDU Guard is veiliger voor toegangspoorten."},
+{type:"mc",q:"Wat is 'UplinkFast' in Cisco STP?",o:["Versnelt uplinks algemeen","Een verouderde Cisco STP-feature die snelle failover biedt voor uplinks door een directe switch naar Forwarding — vervangen door RSTP","Een type trunk-feature","Een type VTP-feature"],c:[1],h:"UplinkFast = klassiek Cisco. Met RSTP bereik je hetzelfde sneller en standaard. Gebruik RSTP/MST i.p.v. UplinkFast."},
+{type:"mc",q:"Wat is 'MST' (Multiple Spanning Tree)?",o:["Een type VLAN-protocol","Een STP-variant (IEEE 802.1s) die meerdere VLANs groepeert in MST-instanties — betere schaalbaarheid dan PVST+","Een type EtherChannel","Een type VTP-variant"],c:[1],h:"MST = VLAN-groepen per STP-instantie. Efficiënter dan PVST+ (één instantie per VLAN) voor grote netwerken."},
+{type:"mc",q:"Wat is 'DTP' (Dynamic Trunking Protocol)?",o:["Een type routeringsprotocol","Een Cisco-protocol dat automatisch onderhandelt of een poort access of trunk wordt — best uitschakelen op access-poorten","Een type STP","Een type VTP"],c:[1],h:"DTP auto-trunking = beveiligingsrisico. Schakel DTP uit op access-poorten: 'switchport nonegotiate'."},
+{type:"mc",q:"Wat is een 'rogue switch' aanval via DTP?",o:["Een type VLAN-aanval","Een aanvaller sluit een switch aan en laat DTP onderhandelen tot trunk-modus — geeft toegang tot alle VLANs","Een type STP-aanval","Een type ARP-aanval"],c:[1],h:"Rogue switch + DTP = trunk → alle VLANs zichtbaar. Bescherm via 'switchport mode access + nonegotiate'."},
+{type:"mc",q:"Wat is 'CDP-based VLAN Discovery'?",o:["Een type VLAN-scan","Het automatisch configureren van VoIP-telefoons met het juiste Voice VLAN op basis van CDP-berichten van de switch","Een type STP-feature","Een type VTP-feature"],c:[1],h:"CDP + VoIP = switch adverteert het voice VLAN via CDP → IP-telefoon configureert zichzelf automatisch."},
+{type:"mc",q:"Wat is een 'VACL' (VLAN Access Control List)?",o:["Een type standard ACL","Een ACL die toegepast wordt op een VLAN voor het filteren van verkeer binnen het VLAN of tussen VLANs op een switch","Een type extended ACL","Een type NAT-regel"],c:[1],h:"VACL = ACL op een VLAN. Filterverkeer dat nooit een router passeert — bijv. directe L2-communicatie binnen een VLAN."},
+{type:"mc",q:"Wat is een 'trunk allowed VLAN' beveiligingspraktijk?",o:["Sta alle VLANs toe op alle trunks","Beperk trunks tot enkel de VLANs die echt nodig zijn voor een segment — verkleint de aanvalsoppervlakte","Voeg alle VLANs toe aan elke trunk","Verwijder native VLAN van trunks"],c:[1],h:"Minimaal noodzakelijke VLANs op elke trunk = kleinere blast radius bij een VLAN-aanval."},
+{type:"mc",q:"Wat is een 'management plane' op een netwerkapparaat?",o:["De dataverwerking","Het deel van het netwerkapparaat dat verantwoordelijk is voor het beheer (SSH, SNMP, syslog) — apart beveiligen van het data plane","Een type routing tabel","Een type ARP-tabel"],c:[1],h:"Drie vlakken: Data plane (pakketdoorstuur), Control plane (routeringsprotocollen), Management plane (beheer)."},
+{type:"mc",q:"Wat is een 'control plane' op een netwerkapparaat?",o:["Het datapad","Het deel dat routeringsprotocollen, STP, OSPF hello's en andere protocolberichten verwerkt — apart van data doorstuur","Een type monitoring","Een type beheer"],c:[1],h:"Control plane = routeringsprotocollen draaien. Aanval op control plane (bijv. OSPF flooding) = CPU overbelasting."},
+{type:"mc",q:"Wat is 'CoPP' (Control Plane Policing)?",o:["Een type QoS","Een beveiligingsfunctie die het verkeer naar de router-CPU (control plane) beperkt om CPU-aanvallen te voorkomen","Een type firewall","Een type ACL"],c:[1],h:"CoPP = bescherm de router-CPU. Stel limieten in voor hoeveel control plane verkeer (OSPF, SNMP, SSH) de CPU bereikt."},
+{type:"mc",q:"Wat is een 'MPLS VPN' (L3VPN)?",o:["Een type internet VPN","Een service waarbij een MPLS-provider VPN-connectiviteit biedt tussen klantlocaties via een gedeelde MPLS-infrastructuur","Een type IPsec VPN","Een type SSL VPN"],c:[1],h:"MPLS L3VPN = gedeelde infrastructure, geïsoleerde klantnetwerken via VRFs en MPLS-labels."},
+{type:"mc",q:"Wat is een 'VRF' (Virtual Routing and Forwarding)?",o:["Een type virtuele switch","Een virtuele routerinstantie die een aparte routeringstabel bijhoudt — meerdere VRFs op één router voor multi-tenant isolatie","Een type VLAN","Een type routing protocol"],c:[1],h:"VRF = meerdere routeringstabellen op één router. Klant A en B kunnen overlappende IP's hebben zonder conflict."},
+{type:"mc",q:"Wat is 'DMVPN' (Dynamic Multipoint VPN)?",o:["Een type statisch VPN","Een Cisco hub-and-spoke VPN-architectuur die ook spoke-to-spoke tunnels dynamisch aanmaakt — efficiënter dan full-mesh IPsec","Een type MPLS VPN","Een type SSL VPN"],c:[1],h:"DMVPN = hub-and-spoke VPN met on-demand spoke-to-spoke verbindingen. Ideaal voor WAN met veel lokaties."},
+{type:"mc",q:"Wat is 'SD-WAN' (Software-Defined WAN)?",o:["Een type MPLS-service","Een WAN-architectuur waarbij een centrale controller de WAN-verbindingen beheert over meerdere transports (MPLS, internet, LTE)","Een type VPN","Een type routing protocol"],c:[1],h:"SD-WAN = flexible WAN. Goedkoop internet + MPLS intelligent combineren. Traffic steering op basis van applicatie."},
+{type:"mc",q:"Wat is het doel van 'NetFlow' op een Cisco router?",o:["Een type firewall","Het exporteren van verkeersstatistieken (wie praat met wie, hoeveel, welk protocol) voor analyse en capacity planning","Een type routeringsprotocol","Een type SNMP-feature"],c:[1],h:"NetFlow = verkeersanalyse. Wie gebruikt hoeveel bandbreedte? Welke applicaties? Nuttig voor security en capacity planning."},
+{type:"mc",q:"Wat is 'SFLOW' en hoe verschilt het van NetFlow?",o:["Ze zijn identiek","sFlow = open standaard, samples pakketdata op schaal; NetFlow = Cisco-proprietary, exporteert flow-statistieken","sFlow is sneller","NetFlow is open standaard"],c:[1],h:"sFlow = sampling op hoge snelheid. NetFlow = exacte flow-statistieken. sFlow schaalbaar op hoge-snelheidslinks."},
+{type:"mc",q:"Wat is een 'proxy ARP'?",o:["Een type ARP-aanval","Een router-feature waarbij de router ARP-verzoeken beantwoordt namens een host in een ander subnet","Een type ARP-beveiliging","Een type ARP-cache"],c:[1],h:"Proxy ARP = de router antwoordt 'ik ben de gateway voor dat adres'. Nuttig voor sommige legacy-configuraties maar kan verwarrend zijn."},
+{type:"mc",q:"Wat is HSRP (Hot Standby Router Protocol)?",o:["Een type STP","Een Cisco-protocol voor gateway-redundantie waarbij twee routers één virtueel IP-adres delen","Een type routeringsprotocol","Een type VLAN"],c:[1],h:"HSRP = actieve/standby gateways. Clients configureren het virtuele IP als gateway. Actieve router valt uit → standby neemt over."},
+{type:"mc",q:"Wat is VRRP (Virtual Router Redundancy Protocol)?",o:["Een Cisco-proprietary redundantieprotocol","De open standaard equivalent van HSRP (IEEE) — meerdere routers delen één virtueel IP-adres voor gateway-redundantie","Een type STP","Een type routeringsprotocol"],c:[1],h:"VRRP = open HSRP. Hetzelfde principe maar vendor-onafhankelijk. Gebruik VRRP voor multi-vendor omgevingen."},
+{type:"mc",q:"Wat is GLBP (Gateway Load Balancing Protocol)?",o:["Een type HSRP-variant","Een Cisco-protocol voor gateway-redundantie MET load balancing — meerdere routers zijn actief en verwerken elk een deel van het verkeer","Een type VPN","Een type routeringsprotocol"],c:[1],h:"GLBP = load balanced gateway redundantie. Vier routers kunnen elk 25% van het verkeer verwerken + failover."},
+{type:"mc",q:"Wat is 'Gratuitous ARP' en hoe kan het misbruikt worden?",o:["Een type ARP-verzoek","Een ARP-bericht dat een apparaat stuurt om zijn IP-MAC mapping te adverteren — misbruikt bij ARP poisoning om de cache te vervuilen","Een type ARP-cache","Een type ARP-beveiliging"],c:[1],h:"Gratuitous ARP = 'ik heb dit IP-adres'. Onzevraagd. Aanvallers sturen valse gratuitous ARPs om caches te vergiftigen."},
+{type:"mc",q:"Wat is 'RSTP edge port' en hoe configuur je het op Cisco?",o:["Hetzelfde als trunk port","Een RSTP-poort die onmiddellijk in forwarding gaat zonder STP-states — geconfigureerd via 'spanning-tree portfast'","Een type access-poort","Een type uplink-poort"],c:[1],h:"RSTP edge port = PortFast in RSTP-terminologie. Cisco: spanning-tree portfast. Enkel voor access-poorten!"},
+{type:"mc",q:"Wat is 'RSTP proposal/agreement mechanisme'?",o:["Een type STP-bericht","Het snelle RSTP-convergentiemechanisme waarbij een nieuwe link direct Forwarding gaat na een handshake met de buur","Een type STP-timer","Een type BPDU-type"],c:[1],h:"Proposal/Agreement = RSTP's geheim voor snelle convergentie. Geen 30-50 seconde wachten — milliseconden."},
+{type:"mc",q:"Wat is een 'CAM-table overflow' aanval?",o:["Hetzelfde als ARP poisoning","Een aanval waarbij een switch's CAM-table gevuld wordt met valse MAC-adressen zodat hij degradeert naar hub-gedrag (MAC flooding)","Een type VLAN-aanval","Een type STP-aanval"],c:[1],h:"CAM overflow = MAC flooding. De aanval en het resultaat zijn hetzelfde. Port security beperkt het aantal MAC-adressen per poort."},
+{type:"mc",q:"Wat doet het commando 'switchport port-security maximum 2'?",o:["Staat 2 VLANs toe","Beperkt het aantal MAC-adressen op de poort tot 2 — meer MAC's = security violation actie","Staat 2 clients toe","Configureert 2 trunk-VLANs"],c:[1],h:"Port security maximum = CAM-table beperking per poort. Nuttig om MAC flooding te voorkomen."},
+{type:"mc",q:"Wat zijn de drie port-security violation modes op Cisco?",o:["Allow, Block, Monitor","Protect (drop), Restrict (drop + log), Shutdown (poort uitschakelen)","Accept, Deny, Log","Drop, Forward, Block"],c:[1],h:"Protect = stil droppen. Restrict = droppen + SNMP/syslog. Shutdown = poort err-disabled. Shutdown is het strengst."},
+{type:"mc",q:"Wat is een 'err-disabled' poort op een Cisco switch?",o:["Een uitgeschakelde poort","Een poort die automatisch uitgeschakeld is door de switch na een beveiligings- of configuratiefout — herstel via 'no shutdown' of auto-recovery","Een type trunk-poort","Een type access-poort"],c:[1],h:"Err-disabled = automatische uitschakeling. Oorzaken: port security violation, BPDU Guard, UDLD. Herstel manueel."},
+{type:"mc",q:"Wat is 'UDLD' (Unidirectional Link Detection)?",o:["Een type STP-protocol","Een Cisco-protocol dat eenzijdige verbindingen detecteert — links die in één richting werken maar niet in de andere (fiber)","Een type routing-protocol","Een type EtherChannel-protocol"],c:[1],h:"UDLD = detecteer broken fiber links. Optisch = ene richting kan werken, andere niet. UDLD schakelt de link uit."},
+{type:"mc",q:"Wat is 'LLDP-MED' (Media Endpoint Discovery)?",o:["Een type LLDP voor media-servers","Een uitbreiding van LLDP specifiek voor IP-telefoons — adverteert voice VLAN, QoS-beleid en locatie-informatie","Een type CDP-variant","Een type SNMP-extensie"],c:[1],h:"LLDP-MED = LLDP voor VoIP. Open standaard equivalent van Cisco CDP voor IP-telefoon configuratie."},
+{type:"mc",q:"Wat is 'PoE' (Power over Ethernet) en wat zijn de standaarden?",o:["Een type netwerk-protocol","Voeding via Ethernet-kabel voor apparaten zoals IP-telefoons, AP's en camera's — IEEE 802.3af (15W), 802.3at (30W), 802.3bt (90W)","Een type VLAN-techniek","Een type QoS-methode"],c:[1],h:"PoE = geen apart stroomkabel nodig. 802.3af voor IP-phones, 802.3at voor AP's, 802.3bt voor hoge-vermogen apparaten."},
+{type:"mc",q:"Wat is 'spanning-tree guard root' op een Cisco switch?",o:["Beschermt de root bridge","Voorkomt dat een niet-root switch de root bridge wordt door poorten te blokkeren die superieure BPDUs ontvangen","Hetzelfde als BPDU Guard","Hetzelfde als BPDU Filter"],c:[1],h:"Root Guard = root bridge positie verdedigen. Een poort met Root Guard gaat err-disabled als het superieure BPDUs ontvangt."},
+{type:"mc",q:"Wat is een 'super VLAN' of 'VLAN aggregation'?",o:["Een VLAN met veel hosts","Een architectuur waarbij meerdere sub-VLANs één IP-subnet delen via een super VLAN interface — bespaard IP-adressen op access-switches","Een type trunk","Een type inter-VLAN routing"],c:[1],h:"Super VLAN = IP-adresruimte delen. Alle sub-VLANs gebruiken hetzelfde subnet maar zijn L2-geïsoleerd van elkaar."},
+{type:"mc",q:"Wat is 'IP Source Guard with Static Bindings'?",o:["Een statische ARP-tabel","Handmatig gedefinieerde IP-MAC-poort bindingen voor apparaten zonder DHCP — uitbreiding van de DHCP-snooping binding database","Een type statische route","Een type statische ACL"],c:[1],h:"Statische bindings voor IP Source Guard = servers met vaste IP-adressen ook beschermen tegen spoofing."},
+{type:"mc",q:"Wat is een 'passive mode' FTP en waarom is het relevant voor firewalls?",o:["Een type file transfer","FTP waarbij de server een datapoort opent die de client verbindt — werkt beter met firewalls dan active FTP (waarbij de server verbinding initieert)","Een type NAT-configuratie","Een type ACL"],c:[1],h:"Passive FTP = client initieert data-verbinding. Active FTP = server initieert → geblokkeerd door stateful firewalls."},
+{type:"mc",q:"Wat is 'OSPF Authentication'?",o:["Een type OSPF-beveiliging","MD5 of SHA-gebaseerde authenticatie van OSPF-buren om valse OSPF-updates te voorkomen","Een type OSPF-timer","Een type OSPF-feature"],c:[1],h:"OSPF auth = verifieer dat hellos van echte OSPF-buren komen. Rogue router kan anders valse routes injecteren."},
+{type:"mc",q:"Wat is 'EIGRP Authentication'?",o:["Een type EIGRP-beveiliging","MD5 of SHA-gebaseerde authenticatie van EIGRP-updates om te voorkomen dat een aanvaller valse routes injecteert","Een type EIGRP-metric","Een type EIGRP-timer"],c:[1],h:"Routeringsprotocol-authenticatie = voorkomen dat een aanvaller valse routes injecteert en verkeer omlegt."},
+{type:"mc",q:"Wat is 'BGP session security' best practice?",o:["BGP altijd zonder authenticatie","BGP MD5-authenticatie, TTL-beveiliging (GTSM), prefix-filtering en route-maps om BGP-hijacking te voorkomen","BGP enkel intern gebruiken","BGP met community strings beveiligen"],c:[1],h:"BGP zonder beveiliging = aanvaller kan valse routes adverteren. MD5 + GTSM + prefix-filtering = veilige BGP-sessie."},
+{type:"mc",q:"Wat is 'GTSM' (Generalized TTL Security Mechanism) voor BGP?",o:["Een type BGP-timer","Een beveiligingsmechanisme dat BGP-paketten accepteert met TTL >= 254, waardoor aanvallen van ver weg geblokkeerd worden","Een type BGP-community","Een type BGP-attribuut"],c:[1],h:"GTSM = BGP buren zijn direct verbonden (TTL=255). TTL <254 = pakket heeft routers doorkruist → verwerp."},
+{type:"mc",q:"Wat is 'RPKI' (Resource Public Key Infrastructure)?",o:["Een type PKI voor VPNs","Een systeem dat AS-nummers en IP-prefixen koppelt via cryptografische certificaten — beschermt tegen BGP-hijacking","Een type DNS-beveiliging","Een type firewall"],c:[1],h:"RPKI = verifieer dat AS X het recht heeft prefixes Y te adverteren. Beschermt tegen accidentele en opzettelijke BGP-hijacking."},
+{type:"mc",q:"Wat is een 'internet exchange point' (IXP)?",o:["Een type ISP","Een neutrale locatie waar meerdere ISPs en netwerken directe verbindingen onderhouden voor efficiënte verkeersuitwisseling","Een type datacenter","Een type BGP-server"],c:[1],h:"IXP = de ontmoetingsplaats van het internet. Amsterdam AMS-IX, Frankfurt DE-CIX. Peering = goedkoper dan transit."},
+{type:"mc",q:"Wat is het verschil tussen 'peering' en 'transit' in BGP?",o:["Ze zijn identiek","Peering = gratis wederzijdse uitwisseling van eigen routes; Transit = betaald doorzenden van all-routes via upstream provider","Transit is gratis","Peering is betaald"],c:[1],h:"Peering = uitwisselen van eigen routes. Transit = betaal een upstream om al je verkeer te forwarden."},
+{type:"mc",q:"Wat is een 'full routing table' in BGP?",o:["Een volledige routeringstabel per ISP","De complete BGP-routeringstabel van het internet (~900.000+ prefixen) — alleen voor core internet routers","Een type full-mesh BGP","Een type default route"],c:[1],h:"Full table = alle internet-routes. ~900K+ prefixen. Vereist krachtige routers. Kleine sites gebruiken default route."},
+{type:"mc",q:"Wat is een 'prefix hijacking' in BGP?",o:["Een type DNS-aanval","Een aanval waarbij een AS een prefix adverteert dat van een ander AS is — intentioneel (aanval) of accidenteel (misconfiguratie)","Een type ARP-aanval","Een type OSPF-aanval"],c:[1],h:"BGP hijacking = stelen van iemands IP-adresruimte. Verkeer gaat naar de verkeerde bestemming. Pakistan Telecom → YouTube 2008."},
+{type:"mc",q:"Wat is een 'black hole community' in BGP?",o:["Een type BGP-filter","Een BGP-community waarmee een AS kan aangeven dat een specifiek prefix 'drop' moet worden — gebruikt voor DDoS-mitigatie via RTBH","Een type BGP-attribuut","Een type routeringsbeleid"],c:[1],h:"RTBH (Remotely Triggered Black Hole) = stop DDoS-verkeer bij de upstream. Prefix → black hole community → upstream dropt."},
+{type:"mc",q:"Wat is 'Equal Cost Multi-Path' (ECMP)?",o:["Een type failover","Load balancing over meerdere gelijke-cost routes naar dezelfde bestemming — hogere doorvoer dan via één pad","Een type routing-metric","Een type STP-feature"],c:[1],h:"ECMP = gebruik meerdere even-goede paden tegelijk. Bijv. twee 10Gbps uplinks → effectief 20Gbps load balanced."},
+{type:"mc",q:"Wat is 'PBR' (Policy-Based Routing)?",o:["Een type ACL","Het routeren van verkeer op basis van policies (bijv. source IP, protocol) in plaats van enkel de bestemming — negeeert de routeringstabel","Een type OSPF-feature","Een type NAT"],c:[1],h:"PBR = route anders dan de routeringstabel zegt. Bijv. web-verkeer (poort 80) via MPLS, backup via internet."},
+{type:"mc",q:"Wat is het verschil tussen 'in-path' en 'out-of-path' netwerkapparaten?",o:["Ze zijn identiek","In-path = verkeer gaat door het apparaat (firewall, IDS/IPS); Out-of-path = krijgt een kopie (tap, SPAN) maar beïnvloedt het verkeer niet","Out-of-path is sneller","In-path kan geen verkeer blokkeren"],c:[1],h:"In-path = kan verkeer blokkeren maar toevoegt latency. Out-of-path = kan enkel melden, geen impact op doorvoer."},
+{type:"mc",q:"Wat is een 'network tap' (test access port)?",o:["Een type port mirroring","Een passief hardware-apparaat dat een exacte kopie van het verkeer op een link maakt zonder invloed op dat verkeer","Een type SPAN","Een type firewall"],c:[1],h:"Network tap = perfecte kopie, geen impact. Beter dan SPAN voor forensics of IDS omdat niets gemist wordt."},
+{type:"mc",q:"Wat is 'ERSPAN' (Encapsulated Remote SPAN)?",o:["Een type VPN","Een uitbreiding van SPAN waarbij gespiegeld verkeer via GRE-tunnel naar een remote locatie verstuurd wordt","Een type EtherChannel","Een type trunk-protocol"],c:[1],h:"ERSPAN = stuur SPAN-data over het netwerk. Analyseer verkeer van een switch in datacenter A vanuit kantoor B."},
+{type:"mc",q:"Wat is een 'flow record' in NetFlow?",o:["Een type logboek","Een set van pakketkenmerken die een unieke flow definieert: src/dst IP, src/dst poort, protocol, ToS, input interface","Een type routing-record","Een type SNMP-trap"],c:[1],h:"Flow = unieke combinatie van 5-tuple (src IP, dst IP, src port, dst port, protocol). NetFlow telt bytes/pakketten per flow."},
+{type:"mc",q:"Wat is een 'network baseline' in het kader van prestatiebeheer?",o:["Een minimale bandbreedte","De gemeten normale verkeers- en prestatiewaarden van een netwerk waartegen toekomstige metingen vergeleken worden","Een type monitoring-alert","Een type router-configuratie"],c:[1],h:"Baseline = wat is 'normaal'? Zonder baseline weet je niet of een waarde afwijkend is."},
+{type:"mc",q:"Wat is 'capacity planning' voor netwerken?",o:["Een type back-up planning","Het analyseren van huidige en toekomstige verkeersbehoeften om tijdig bandbreedte en infrastructuur uit te breiden","Een type beveiligingsplanning","Een type monitoring"],c:[1],h:"Capacity planning = voorspel groei, upgrade proactief. NetFlow + trending = wanneer loopt mijn WAN-link vol?"},
+{type:"mc",q:"Wat is 'jitter' bij netwerkcommunicatie?",o:["Een type vertraging","De variatie in vertraging (latency) tussen pakketten — kritisch voor VoIP en video waarbij consistente timing essentieel is","Een type pakketverlies","Een type bandbreedte-meting"],c:[1],h:"Jitter = inconsistente latency. VoIP pakketten moeten met vaste tussenposen aankomen. Hoge jitter = schokkerig geluid."},
+{type:"mc",q:"Wat is 'packet loss' en wanneer is het acceptabel?",o:["Het verloren gaan van alle pakketten","Het percentage pakketten dat niet aankomt bij de bestemming — voor TCP is herversturing beschikbaar, voor UDP/VoIP is verlies direct merkbaar","Een type latency","Een type jitter"],c:[1],h:"Packet loss > 1% = waarneembaar voor VoIP. TCP compenseert via herversturing maar met verhoogde latency."},
+{type:"mc",q:"Wat is MPLS-TE (Traffic Engineering)?",o:["Een type routing-protocol","MPLS-gebaseerde traffic engineering die expliciet paden door het netwerk definieert voor load balancing en bandbreedte-garanties","Een type QoS-protocol","Een type VPN"],c:[1],h:"MPLS-TE = stuur verkeer precies over het pad dat jij wil, niet wat het routeringsprotocol kiest. Bandbreedte-garanties."},
+{type:"mc",q:"Wat is het verschil tussen 'soft configuration' en 'hard reset' bij BGP?",o:["Ze zijn identiek","Soft config = heractiveer BGP-policies zonder de BGP-sessie te resetten; Hard reset = verbreek en herstel de BGP-sessie (tijdelijk geen routing)","Hard reset is veiliger","Soft config is niet beschikbaar"],c:[1],h:"Soft reconfiguration = pas routing policies toe zonder sessieverstoring. Gebruik soft-reconfiguration inbound voor inbound policy changes."},
+{type:"mc",q:"Wat is 'prefix-list vs distribute-list' in routeringsfiltering?",o:["Ze zijn identiek","Prefix-list = efficiëntere prefix-filter met lengtecontrole; distribute-list gebruikt ACLs (minder flexibel, trager)","ACLs zijn efficiënter","Distribute-list ondersteunt lengtecontrole"],c:[1],h:"Prefix-list = modernere aanpak. Ondersteuning voor minimale en maximale prefix-lengte. Gebruik prefix-lists boven ACLs voor routing."},
+{type:"mc",q:"Wat is een 'OSPF router ID' en hoe wordt het bepaald?",o:["Het IP-adres van de router","Een 32-bit identifier die de router uniek identificeert in OSPF — keuze: manueel > loopback IP (hoogste) > actieve interface IP (hoogste)","De hostname van de router","Het AS-nummer"],c:[1],h:"Router ID = OSPF-identiteit. Configureer expliciet via 'router-id' om consistentie te garanderen."},
+{type:"mc",q:"Wat is 'OSPF database exchange' tijdens neighbourship?",o:["Een type routing-update","Het initieel uitwisselen van de LSDB (link state database) tussen nieuwe OSPF-buren — states: ExStart, Exchange, Loading, Full","Een type hello-uitwisseling","Een type OSPF-timer"],c:[1],h:"Database exchange = OSPF-buren synchroniseren hun topologie-database. Full state = synchronisatie voltooid."},
+{type:"mc",q:"Wat is 'OSPF SPF calculation' en wanneer treedt het op?",o:["Een type OSPF-berekening","De Dijkstra-algoritme-berekening die OSPF uitvoert om de kortste paden te berekenen nadat de topologie verandert","Een type OSPF-timer","Een type routeringstabel-update"],c:[1],h:"SPF = Shortest Path First. Elke topology-wijziging triggert een SPF-berekening. SPF throttle timers beperken frequentie."},
+{type:"mc",q:"Wat is 'EIGRP DUAL algorithm'?",o:["Een type OSPF-algoritme","Diffusing Update Algorithm — EIGRP's algoritme voor het berekenen van de beste route en het direct hebben van een backup-route (feasible successor)","Een type RIP-algoritme","Een type BGP-algoritme"],c:[1],h:"DUAL = EIGRP's snelle convergentie. Als de primaire route wegvalt, is de feasible successor direct beschikbaar."},
+{type:"mc",q:"Wat is een 'feasible successor' in EIGRP?",o:["Een back-up router","Een back-up route in EIGRP die al berekend is en direct actief wordt als de primaire route wegvalt — maakt EIGRP zeer snel convergerend","Een type OSPF-term","Een type statische route"],c:[1],h:"Feasible successor = hot standby route. Al gevalideerd via de feasibility condition. Geen herberekening nodig bij failover."},
+{type:"mc",q:"Wat is 'OSPF LFA' (Loop-Free Alternates)?",o:["Een type OSPF-beveiliging","Een OSPF-feature die pre-computed backup paden bijhoudt voor snelle failover zonder SPF-herberekening","Een type OSPF-area","Een type OSPF-metric"],c:[1],h:"OSPF LFA = OSPF's equivalent van EIGRP feasible successor. Sub-seconde failover voor IP/MPLS netwerken."},
+{type:"mc",q:"Wat is 'MPLS label stack'?",o:["Een type routing tabel","Meerdere MPLS-labels gestapeld op een pakket voor diensten als MPLS-VPN en TE-tunnels","Een type VLAN-tag","Een type QoS-markering"],c:[1],h:"Label stack = P-to-P stack. Binnenste label = VPN-label (klantidentificatie), buitenste label = transport."},
+{type:"mc",q:"Wat is een 'penultimate hop popping' (PHP) in MPLS?",o:["Een type MPLS-timer","Het verwijderen van het MPLS-label door de voorlaatste hop (P-router) zodat de egress PE direct het IP-pakket ontvangt","Een type BGP-feature","Een type QoS-feature"],c:[1],h:"PHP = efficiëntie. Egress PE hoeft geen twee opzoekingen te doen (MPLS + IP). P-router doet de label-pop."},
+{type:"mc",q:"Wat is een 'LSP' (Label Switched Path) in MPLS?",o:["Een type routing-tabel pad","Het end-to-end pad door een MPLS-netwerk dat pakketten volgen op basis van hun labels","Een type BGP-pad","Een type VPN-tunnel"],c:[1],h:"LSP = het gebaande pad voor MPLS-pakketten. Geconfigureerd via LDP (automatisch) of RSVP-TE (manueel)."},
+{type:"mc",q:"Wat is het verschil tussen een 'edge' en 'core' router in een MPLS-netwerk?",o:["Ze zijn identiek","Edge (PE) = punten waar klantverkeer het MPLS-netwerk in/uitkomt (label push/pop); Core (P) = interne routers die enkel labels swappen","Core routers voegen labels toe","Edge routers swappen labels"],c:[1],h:"PE = Provider Edge (label toe/weghalen). P = Provider (alleen label swappen, hoge snelheid, enkel MPLS)."},
+{type:"mc",q:"Wat is een 'MPLS label' en welke waarden zijn gereserveerd?",o:["Een 32-bit getal zonder restricties","Een 20-bit waarde (0-1.048.575) waarvan de laagste waarden gereserveerd zijn: 0=IPv4 explicit null, 3=implicit null (PHP)","Een 16-bit getal","Een 8-bit getal"],c:[1],h:"Label 0 = IPv4 explicit null (preserve QoS). Label 3 = implicit null (penultimate hop pop). Labels 0-15 zijn gereserveerd."},
+{type:"mc",q:"Wat is 'Ethernet over MPLS' (EoMPLS)?",o:["Een type VLAN-techniek","Een L2VPN-dienst die Ethernet-frames tussen twee locaties tunnelt via een MPLS-kern — pseudo-wire","Een type IP-over-MPLS","Een type GRE-tunnel"],c:[1],h:"EoMPLS = stretch een Ethernet-segment over MPLS. Beide locaties zijn in hetzelfde L2 broadcast domain."},
+{type:"mc",q:"Wat is 'IS-IS' routeringsprotocol?",o:["Een type OSPF-variant","Intermediate System to Intermediate System — een link-state IGP populair bij ISPs, ook IPv6-capable en schaalbaar","Een type BGP","Een type EIGRP"],c:[1],h:"IS-IS = OSPF's concurrente. Populair bij ISPs (Juniper-omgevingen). Werkt op eigen PDUs, niet op IP."},
+];
+
+
+// ── CONFIG ──────────────────────────────────────────
+const cfg = {
+  count: sessionStorage.getItem('cfg-count') || '50',
+  order: sessionStorage.getItem('cfg-order') || 'shuffle',
+  types: sessionStorage.getItem('cfg-types') || 'all',
+};
+
+// ── INIT ────────────────────────────────────────────
+const POOL = window.QUESTIONS_routering || [];
+let questions = [...POOL];
+if (cfg.types !== 'all') questions = questions.filter(q => q.type === cfg.types);
+if (cfg.order === 'shuffle') questions = questions.sort(() => Math.random() - 0.5);
+if (cfg.count !== 'all') questions = questions.slice(0, parseInt(cfg.count));
+
+let idx = 0, correct = 0, wrong = 0, sel = new Set();
+
+function updateStats() {
+  const done = idx, total = questions.length, left = total - done;
+  const pct = done > 0 ? Math.round(correct / done * 100) : null;
+  document.getElementById('sv-score').textContent = correct;
+  document.getElementById('sv-wrong').textContent = wrong;
+  document.getElementById('sv-left').textContent = left;
+  document.getElementById('sv-pct').textContent = pct !== null ? pct + '%' : '—';
+  document.getElementById('prog').style.width = (done / total * 100) + '%';
+  document.getElementById('prog-txt').textContent = `Vraag ${Math.min(idx+1,total)} / ${total}`;
+}
+
+function renderQ() {
+  sel = new Set();
+  const q = questions[idx];
+  const letters = ['A','B','C','D','E','F'];
+
+  let body = '';
+  if (q.type === 'open') {
+    body = `<textarea class="open-inp" id="oa" rows="2" placeholder="Typ je antwoord hier…" oninput="onOI()"></textarea>`;
+  } else {
+    body = `<div class="opts">${q.o.map((o,i) => `<div class="opt" id="o${i}" onclick="tog(${i})"><div class="opt-box" id="b${i}"></div><span class="opt-letter">${letters[i]}</span><span class="opt-text">${o}</span></div>`).join('')}</div>`;
+  }
+
+  const tb = q.type === 'multi' ? `<span class="q-tbadge tb-multi">◈ Meerdere antwoorden</span>`
+           : q.type === 'open'  ? `<span class="q-tbadge tb-open">✏ Open vraag</span>` : '';
+
+  document.getElementById('q-container').innerHTML = `
+    <div class="q-card">
+      <div class="q-meta">
+        <span class="q-num">V${idx+1}</span>
+        <span class="q-sub">${q.t}</span>
+        ${tb}
+      </div>
+      <div class="q-text">${q.q}</div>
+      ${body}
+      <button class="hint-btn" id="hint-btn" onclick="toggleHint()">💡 Hint</button>
+      <div class="hint-box" id="hint-box">${q.h}</div>
+      <div class="feedback" id="fb"></div>
+    </div>`;
+
+  const bc = document.getElementById('btn-check');
+  bc.disabled = true;
+  bc.classList.remove('hidden');
+  document.getElementById('btn-next').classList.add('hidden');
+  document.getElementById('btn-skip').classList.remove('hidden');
+
+  if (q.type === 'open') {
+    document.getElementById('oa').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!bc.disabled) check(); }
+    });
+  }
+}
+
+function onOI() {
+  document.getElementById('btn-check').disabled = !document.getElementById('oa').value.trim();
+}
+
+function toggleHint() {
+  const hb = document.getElementById('hint-box');
+  hb.classList.toggle('show');
+  document.getElementById('hint-btn').textContent = hb.classList.contains('show') ? '💡 Hint verbergen' : '💡 Hint';
+}
+
+function tog(i) {
+  const q = questions[idx];
+  if (document.getElementById('o'+i)?.classList.contains('locked')) return;
+  if (q.type === 'mc') {
+    sel.forEach(s => { document.getElementById('o'+s)?.classList.remove('sel'); const b=document.getElementById('b'+s); if(b) b.innerHTML=''; });
+    sel.clear();
+  }
+  if (sel.has(i)) {
+    sel.delete(i);
+    document.getElementById('o'+i).classList.remove('sel');
+    document.getElementById('b'+i).innerHTML = '';
+  } else {
+    sel.add(i);
+    document.getElementById('o'+i).classList.add('sel');
+    document.getElementById('b'+i).innerHTML = '✓';
+  }
+  document.getElementById('btn-check').disabled = sel.size === 0;
+}
+
+function check() {
+  const q = questions[idx];
+  let ok = false;
+
+  if (q.type === 'open') {
+    const raw = document.getElementById('oa').value.trim().toLowerCase();
+    const acc = (q.ans||[]).map(a=>a.toLowerCase());
+    ok = acc.some(a => raw===a || raw.includes(a) || a.includes(raw));
+    const ta = document.getElementById('oa');
+    ta.classList.add(ok?'ok':'bad');
+    ta.disabled = true;
+  } else {
+    const s=[...sel], cor=q.c;
+    q.o.forEach((_,i)=>document.getElementById('o'+i)?.classList.add('locked'));
+    q.o.forEach((_,i)=>{
+      const el=document.getElementById('o'+i),bx=document.getElementById('b'+i);
+      if(!el) return;
+      el.classList.remove('sel');
+      if(s.includes(i)&&cor.includes(i)){el.classList.add('ok');if(bx)bx.innerHTML='✓';}
+      else if(s.includes(i)&&!cor.includes(i)){el.classList.add('bad');if(bx)bx.innerHTML='✗';}
+      else if(!s.includes(i)&&cor.includes(i)){el.classList.add('missed');if(bx)bx.innerHTML='!';}
+    });
+    ok = cor.every(c=>s.includes(c))&&s.every(sv=>cor.includes(sv));
+  }
+
+  if(ok) correct++; else wrong++;
+  updateStats();
+
+  const fb=document.getElementById('fb');
+  fb.className='feedback show '+(ok?'fb-ok':'fb-bad');
+  fb.innerHTML=(ok?'✅ <strong>Correct!</strong> ':'❌ <strong>Fout.</strong> ')+q.f;
+
+  document.getElementById('btn-check').classList.add('hidden');
+  document.getElementById('btn-skip').classList.add('hidden');
+  const bn=document.getElementById('btn-next');
+  bn.classList.remove('hidden');
+  bn.textContent = idx>=questions.length-1 ? 'Resultaten →' : 'Volgende →';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function skipQ() { wrong++; updateStats(); advance(); }
+function nextQ() { advance(); }
+function advance() {
+  idx++;
+  if(idx>=questions.length){showScore();return;}
+  renderQ();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function showScore() {
+  const total=questions.length, pct=Math.round(correct/total*100);
+  const msg = pct>=85?'🏆 Uitstekend! Je beheerst de leerstof.':pct>=70?'👍 Goed gedaan! Nog wat herhaling.':pct>=55?'📚 Voldoende — extra studie aangeraden.':'💡 Herhaal de cursus en probeer opnieuw.';
+  document.getElementById('quiz-screen').style.display='none';
+  const sc=document.getElementById('score-screen');
+  sc.style.display='block';
+  sc.innerHTML=`
+    <div class="sc-badge">🌐 Routering & Switching</div>
+    <div class="sc-pct">${pct}%</div>
+    <div class="sc-msg">${msg}</div>
+    <div class="sc-grid">
+      <div class="sc-item"><span class="sc-num" style="color:var(--correct)">${correct}</span><span class="sc-lbl">Correct</span></div>
+      <div class="sc-item"><span class="sc-num" style="color:var(--wrong)">${wrong}</span><span class="sc-lbl">Fout / Over</span></div>
+      <div class="sc-item"><span class="sc-num" style="color:var(--muted2)">${total}</span><span class="sc-lbl">Totaal</span></div>
+    </div>
+    <div class="sc-btns">
+      <a class="btn-home" href="index.html">← Andere module</a>
+      <button class="btn-retry" onclick="location.reload()">↺ Opnieuw</button>
+    </div>`;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// Start
+updateStats();
+renderQ();
+</script>
+</body>
+</html>

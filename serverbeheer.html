@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🖥️ Serverbeheer S2 — AP Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07080b;--panel:#0d0f14;--panel2:#141720;
+  --border:#1a1f2e;--border2:#242b3d;
+  --text:#dde3f0;--muted:#4a5568;--muted2:#6b7280;
+  --c:#ff4d6d;--correct:#22c55e;--wrong:#ef4444;--amber:#ffb800;--purple:#a855f7;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(0,212,255,.05),transparent);pointer-events:none;z-index:0}
+.wrap{max-width:860px;margin:0 auto;padding:28px 20px 80px;position:relative;z-index:1}
+
+/* topbar */
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:28px;flex-wrap:wrap}
+.back{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted2);background:transparent;border:1px solid var(--border2);padding:7px 14px;border-radius:4px;cursor:pointer;text-decoration:none;transition:all .15s;display:inline-block}
+.back:hover{border-color:var(--muted);color:var(--text)}
+.topic-pill{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--c);border:1px solid;border-color:color-mix(in srgb,var(--c) 40%,transparent);background:color-mix(in srgb,var(--c) 8%,transparent);padding:5px 14px;border-radius:3px;margin-left:auto}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--border);border-radius:7px;overflow:hidden;background:var(--panel);margin-bottom:16px}
+.stat{text-align:center;padding:12px 0;border-right:1px solid var(--border)}
+.stat:last-child{border-right:none}
+.sv{font-family:'IBM Plex Mono',monospace;font-size:1.3rem;font-weight:700;line-height:1;display:block}
+.sl{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-top:3px;display:block}
+.prog-wrap{height:3px;background:var(--border);border-radius:2px;margin-bottom:5px;overflow:hidden}
+.prog{height:100%;background:linear-gradient(90deg,var(--c),color-mix(in srgb,var(--c) 70%,#fff));transition:width .5s ease;width:0;border-radius:2px}
+.prog-txt{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-align:right;margin-bottom:20px}
+
+/* card */
+.q-card{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:32px 36px;margin-bottom:18px;animation:up .3s ease}
+@keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.q-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+.q-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--c);background:color-mix(in srgb,var(--c) 8%,transparent);border:1px solid color-mix(in srgb,var(--c) 25%,transparent);padding:3px 10px;border-radius:2px}
+.q-sub{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted2);background:var(--panel2);border:1px solid var(--border);padding:3px 10px;border-radius:2px}
+.q-tbadge{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px}
+.tb-multi{color:var(--amber);background:rgba(255,184,0,.07);border:1px solid rgba(255,184,0,.2)}
+.tb-open{color:var(--purple);background:rgba(168,85,247,.07);border:1px solid rgba(168,85,247,.2)}
+.q-text{font-size:1.02rem;font-weight:500;line-height:1.65;margin-bottom:22px}
+
+/* options */
+.opts{display:flex;flex-direction:column;gap:9px}
+.opt{display:flex;align-items:flex-start;gap:13px;padding:12px 16px;border:1px solid var(--border);border-radius:5px;cursor:pointer;transition:border-color .12s,background .12s;background:var(--bg);user-select:none}
+.opt:hover:not(.locked){border-color:var(--c);background:color-mix(in srgb,var(--c) 4%,transparent)}
+.opt.sel{border-color:var(--c);background:color-mix(in srgb,var(--c) 7%,transparent)}
+.opt.ok{border-color:var(--correct);background:rgba(34,197,94,.07)}
+.opt.bad{border-color:var(--wrong);background:rgba(239,68,68,.07)}
+.opt.missed{border-color:var(--amber);background:rgba(255,184,0,.06)}
+.opt-box{width:18px;height:18px;flex-shrink:0;margin-top:2px;border:2px solid var(--border2);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;transition:all .12s}
+.opt.sel .opt-box{border-color:var(--c);background:var(--c);color:var(--bg)}
+.opt.ok .opt-box{border-color:var(--correct);background:var(--correct);color:#fff}
+.opt.bad .opt-box{border-color:var(--wrong);background:var(--wrong);color:#fff}
+.opt.missed .opt-box{border-color:var(--amber);background:var(--amber);color:#000}
+.opt-letter{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:3px;flex-shrink:0}
+.opt-text{font-size:.92rem;line-height:1.5}
+
+/* open */
+.open-inp{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:12px 16px;font-family:'IBM Plex Sans',sans-serif;font-size:.95rem;resize:none;transition:border-color .15s;margin-top:4px}
+.open-inp:focus{outline:none;border-color:var(--c)}
+.open-inp.ok{border-color:var(--correct);background:rgba(34,197,94,.07)}
+.open-inp.bad{border-color:var(--wrong);background:rgba(239,68,68,.07)}
+
+/* hint */
+.hint-btn{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--amber);background:rgba(255,184,0,.07);border:1px solid rgba(255,184,0,.2);padding:6px 14px;border-radius:4px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px;margin-top:16px}
+.hint-btn:hover{background:rgba(255,184,0,.13)}
+.hint-box{margin-top:10px;padding:12px 16px;background:rgba(255,184,0,.06);border:1px solid rgba(255,184,0,.2);border-radius:5px;font-size:.88rem;line-height:1.6;color:var(--amber);display:none;animation:up .2s ease}
+.hint-box.show{display:block}
+
+/* feedback */
+.feedback{margin-top:18px;padding:13px 18px;border-radius:5px;font-size:.88rem;line-height:1.6;display:none;animation:up .2s ease}
+.feedback.show{display:block}
+.fb-ok{background:rgba(34,197,94,.09);border:1px solid rgba(34,197,94,.3)}
+.fb-bad{background:rgba(239,68,68,.09);border:1px solid rgba(239,68,68,.3)}
+
+/* btns */
+.btn-row{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+.btn{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:1px;text-transform:uppercase;padding:10px 22px;border-radius:4px;cursor:pointer;border:none;transition:all .15s}
+.btn-check{background:var(--c);color:#07080b;font-weight:700}
+.btn-check:hover:not(:disabled){filter:brightness(1.15);transform:translateY(-1px)}
+.btn-check:disabled{background:var(--border);color:var(--muted);cursor:not-allowed;transform:none}
+.btn-next{background:transparent;color:var(--c);border:1px solid var(--c)}
+.btn-next:hover{background:color-mix(in srgb,var(--c) 8%,transparent)}
+.btn-skip{background:transparent;color:var(--muted2);border:1px solid var(--border2)}
+.btn-skip:hover{border-color:var(--muted);color:var(--text)}
+.hidden{display:none!important}
+
+/* score */
+#score-screen{display:none;text-align:center;padding:60px 24px 100px;max-width:680px;margin:0 auto;position:relative;z-index:1}
+.sc-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:4px;text-transform:uppercase;color:var(--c);border:1px solid color-mix(in srgb,var(--c) 30%,transparent);padding:5px 16px;border-radius:2px;display:inline-block;margin-bottom:20px}
+.sc-pct{font-family:'IBM Plex Mono',monospace;font-size:clamp(4rem,12vw,7rem);font-weight:700;line-height:1;margin:16px 0;color:var(--c)}
+.sc-msg{font-size:1.05rem;color:var(--muted2);margin:12px 0 32px}
+.sc-grid{display:flex;justify-content:center;gap:40px;flex-wrap:wrap;margin:24px 0 40px}
+.sc-item{text-align:center}
+.sc-num{font-family:'IBM Plex Mono',monospace;font-size:2rem;font-weight:700;display:block}
+.sc-lbl{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-top:3px;display:block}
+.sc-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn-home{font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:1px;text-transform:uppercase;padding:13px 32px;border-radius:4px;cursor:pointer;font-weight:700;transition:all .15s;background:transparent;color:var(--c);border:1px solid var(--c);text-decoration:none;display:inline-block}
+.btn-home:hover{background:color-mix(in srgb,var(--c) 8%,transparent)}
+.btn-retry{font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:1px;text-transform:uppercase;padding:13px 32px;border-radius:4px;cursor:pointer;font-weight:700;transition:all .15s;border:none;background:var(--c);color:#07080b}
+.btn-retry:hover{filter:brightness(1.15);transform:translateY(-1px)}
+
+@media(max-width:600px){
+  .q-card{padding:20px 18px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .stat:nth-child(2){border-right:none}
+  .stat:nth-child(3){border-right:1px solid var(--border)}
+}
+</style>
+</head>
+<body>
+
+<div id="quiz-screen" class="wrap">
+  <div class="topbar">
+    <a class="back" href="index.html">← Terug</a>
+    <span class="topic-pill">🖥️ Serverbeheer S2</span>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><span class="sv" id="sv-score" style="color:var(--correct)">0</span><span class="sl">Correct</span></div>
+    <div class="stat"><span class="sv" id="sv-wrong" style="color:var(--wrong)">0</span><span class="sl">Fout</span></div>
+    <div class="stat"><span class="sv" id="sv-left" style="color:var(--c)">—</span><span class="sl">Resterend</span></div>
+    <div class="stat"><span class="sv" id="sv-pct" style="color:#a855f7">—</span><span class="sl">Score %</span></div>
+  </div>
+  <div class="prog-wrap"><div class="prog" id="prog"></div></div>
+  <div class="prog-txt" id="prog-txt">Vraag 1 / —</div>
+
+  <div id="q-container"></div>
+
+  <div class="btn-row">
+    <button class="btn btn-skip" id="btn-skip" onclick="skipQ()">Sla over</button>
+    <button class="btn btn-check" id="btn-check" disabled onclick="check()">Controleer</button>
+    <button class="btn btn-next hidden" id="btn-next" onclick="nextQ()">Volgende →</button>
+  </div>
+</div>
+
+<div id="score-screen"></div>
+
+<script>
+window.QUESTIONS_serverbeheer = [
+{type:"mc",q:"Waarvoor staat DNS?",o:["Dynamic Network Service","Domain Name System — vertaalt hostnamen naar IP-adressen en omgekeerd","Data Naming Standard","Distributed Network Security"],c:[1],h:"DNS = het 'telefoonboek' van het internet: naam → IP-adres."},
+{type:"mc",q:"Wat doet een DNS resolver?",o:["Slaat domeinnamen op","Stuurt DNS-queries namens de client naar de juiste DNS-servers en geeft het antwoord terug","Beheert IP-adrestoewijzing","Routeert verkeer op basis van domeinnamen"],c:[1],h:"Resolver = de tussenpersoon. De client vraagt de resolver, de resolver zoekt het antwoord."},
+{type:"mc",q:"Wat is het verschil tussen een autoritaire DNS-server en een recursive resolver?",o:["Ze zijn identiek","Autoritair: heeft het definitieve antwoord voor een zone; Recursive resolver: zoekt het antwoord door andere servers te bevragen","Recursive: heeft het definitieve antwoord; Autoritair: vraagt anderen","Autoritair werkt enkel intern"],c:[1],h:"Autoritair = de bron van waarheid voor een domein. Resolver = de zoeker namens de client."},
+{type:"open",q:"Welk DNS-record type vertaalt een hostnaam naar een IPv4-adres?",ans:["a","a record","a-record"],h:"Het eenvoudigste en meest gebruikte DNS-recordtype. Één letter."},
+{type:"open",q:"Welk DNS-record type vertaalt een hostnaam naar een IPv6-adres?",ans:["aaaa","aaaa record","quad-a"],h:"Vier keer de letter A, omdat IPv6 vier keer zo lang is als IPv4."},
+{type:"mc",q:"Wat doet een CNAME record?",o:["Vertaalt een IP naar een hostnaam","Verwijst een alias-naam naar een canonieke (echte) naam","Specificeert de mailserver voor een domein","Bevat de SOA-informatie"],c:[1],h:"CNAME = Canonical Name. www.bedrijf.be → bedrijf.be (de echte naam)."},
+{type:"mc",q:"Wat doet een MX record?",o:["Vertaalt een hostnaam naar een IP","Verwijst naar de mailserver(s) verantwoordelijk voor e-mail van een domein","Bevat de DNS-servernamen","Een alias voor een andere naam"],c:[1],h:"MX = Mail eXchanger. Vertelt mailservers waarheen e-mail voor dit domein te sturen."},
+{type:"mc",q:"Wat doet een PTR record?",o:["Vertaalt een hostnaam naar een IP (forward lookup)","Vertaalt een IP-adres naar een hostnaam (reverse lookup)","Slaat tekst op bij een domein","Verwijst naar de nameservers"],c:[1],h:"PTR = Pointer. Reverse DNS: IP → naam. Handig voor e-mailvalidatie en logging."},
+{type:"mc",q:"Wat doet een SOA record?",o:["Specificeert de mailserver","Bevat administratieve informatie over een DNS-zone: primaire nameserver, e-mail van beheerder, serienummer, timers","Slaat tekst op","Vertaalt naam naar IPv6"],c:[1],h:"SOA = Start of Authority. Elke DNS-zone heeft één SOA-record met zone-metadata."},
+{type:"mc",q:"Wat is DNS caching en waarom is het nuttig?",o:["Het opslaan van DNS-zones op meerdere servers","Het tijdelijk bijhouden van DNS-antwoorden om herhaalde queries te vermijden en de snelheid te verbeteren","Het beveiligen van DNS-verkeer","Het automatisch updaten van DNS-records"],c:[1],h:"Cache = sla het antwoord op zodat je niet telkens opnieuw hoeft te zoeken. TTL bepaalt hoe lang."},
+{type:"open",q:"Wat is de afkorting voor de tijdsduur die aangeeft hoe lang een DNS-record in cache mag blijven?",ans:["ttl","time to live"],h:"De afkorting is drie letters en staat voor de 'levensduur' van een DNS-antwoord."},
+{type:"mc",q:"Wat is een DNS forward lookup zone?",o:["Een zone voor reverse DNS-queries","Een zone die hostnamen vertaalt naar IP-adressen","Een zone voor CNAME-records alleen","Een zone voor mailrecords"],c:[1],h:"Forward = de normale richting: naam → IP. Dat is de meest gebruikte richting."},
+{type:"mc",q:"Wat is een DNS reverse lookup zone?",o:["Een zone die hostnamen vertaalt naar IP-adressen","Een zone die IP-adressen vertaalt naar hostnamen","Een zone voor CNAME-records","Een zone voor SOA-records"],c:[1],h:"Reverse = omgekeerde richting: IP → naam. Gebruikt in-addr.arpa voor IPv4."},
+{type:"mc",q:"Wat is DNS-delegatie (zone delegation)?",o:["Het overdragen van verantwoordelijkheid voor een subdomein aan een andere nameserver","Het samenvoegen van twee DNS-zones","Het dupliceren van een zone naar een secundaire server","Het beveiligen van een DNS-zone"],c:[0],h:"Delegatie = 'voor dit subdomein, vraag die andere server'. Hiermee werkt het hiërarchische DNS-systeem."},
+{type:"mc",q:"Wat is een conditional forwarder in Windows DNS?",o:["Een algemene forwarder voor alle DNS-queries","Een forwarder die DNS-queries voor een specifiek domein doorstuurt naar een specifieke DNS-server","Een back-up DNS-server","Een type caching-server"],c:[1],h:"Conditional = voorwaardelijk. Queries voor intern.bedrijf.be → interne DNS-server; de rest → ISP."},
+{type:"mc",q:"Wat is DNSSEC?",o:["Een versleutelingsprotocol voor DNS-verkeer","Een extensie die digitale handtekeningen toevoegt aan DNS-antwoorden om te verifiëren dat ze authentiek zijn","Een type DNS-server","Een protocol voor beveiligde zone-overdrachten"],c:[1],h:"DNSSEC = DNS Security Extensions. Beschermt tegen DNS cache poisoning door antwoorden te ondertekenen."},
+{type:"mc",q:"Wat is een DNS zone transfer?",o:["Het verwijderen van een DNS-zone","Het kopiëren van DNS-zone-data van de primaire naar de secundaire server voor redundantie","Het samenvoegen van twee zones","Het exporteren van DNS-records naar een bestand"],c:[1],h:"Zone transfer = replicatie van DNS-data. AXFR = volledige transfer, IXFR = incrementele transfer."},
+{type:"mc",q:"Op welke poort luistert een DNS-server?",o:["TCP/UDP 53","TCP 80","UDP 161","TCP 443"],c:[0],h:"DNS gebruikt poort 53. UDP voor korte queries; TCP voor grote antwoorden of zone transfers."},
+{type:"mc",q:"Wat is een 'stub zone' in Windows DNS?",o:["Een lege DNS-zone","Een zone die alleen de NS- en SOA-records van een andere zone bevat — voor efficiënte name resolution zonder volledige zone transfer","Een back-up van een primaire zone","Een zone voor interne hosts alleen"],c:[1],h:"Stub zone = minimale informatie over een andere zone — weet wie de autoritaire servers zijn."},
+{type:"mc",q:"Wat is een secundaire DNS-zone?",o:["Een zone op de primaire server","Een read-only kopie van een primaire zone op een andere server — voor redundantie en load balancing","Een zone voor CNAME-records","Een zone zonder SOA-record"],c:[1],h:"Secundair = back-up. Read-only kopie van de primaire zone, automatisch bijgewerkt via zone transfer."},
+{type:"mc",q:"Wat is de DHCP-serverrol op Windows Server?",o:["Een DNS-dienst","Een dienst die automatisch IP-adressen en netwerkconfiguratie uitdeelt aan clients in het netwerk","Een VPN-dienst","Een webserverrol"],c:[1],h:"DHCP op Windows Server = de rol die als DHCP-server functioneert voor het netwerk."},
+{type:"mc",q:"Welke twee securitygroepen worden aangemaakt bij DHCP-installatie?",o:["DHCP Admins en DHCP Users","DHCP Operators en DHCP Clients","DHCP Servers en DHCP Managers","DHCP Masters en DHCP Slaves"],c:[0],h:"DHCP Users = read-only; DHCP Administrators = volledige controle."},
+{type:"mc",q:"Wat is 'DHCP scope activeren' op Windows Server?",o:["De DHCP-server starten","De scope beschikbaar maken voor het uitdelen van adressen na configuratie","De scope verwijderen","De scope dupliceren"],c:[1],h:"Een scope moet geactiveerd worden nadat je hem aangemaakt hebt — anders deelt hij niets uit."},
+{type:"mc",q:"Wat zijn DHCP-opties?",o:["Beveiligingsinstellingen","Extra netwerkconfiguratie-informatie die samen met het IP-adres wordt uitgedeeld (bijv. gateway, DNS-server, domein)","Types van IP-adressen","Back-up-instellingen"],c:[1],h:"Opties = alles behalve het IP-adres zelf. Router (option 3) en DNS (option 6) zijn de meest gebruikte."},
+{type:"mc",q:"Wat is het verschil tussen DHCP-scope-opties en server-opties?",o:["Ze zijn identiek","Scope-opties gelden voor één specifieke scope; server-opties gelden voor alle scopes op de server","Server-opties zijn prioritair boven scope-opties","Scope-opties zijn voor IPv6; server-opties voor IPv4"],c:[1],h:"Scope-optie overschrijft de server-optie als ze conflicteren — meer specifiek wint."},
+{type:"mc",q:"Wat is een DHCP superscope?",o:["Een zeer grote scope","Een logische container die meerdere scopes groepeert zodat één DHCP-server meerdere subnetten kan bedienen via één interface","Een scope met reservations","Een back-up scope"],c:[1],h:"Superscope = meerdere scopes, één server. Nuttig bij genummerde subnetten op één fysiek segment."},
+{type:"mc",q:"Wat is DHCP failover in Windows Server?",o:["Een back-up scope op een andere server","Een configuratie waarbij twee DHCP-servers samenwerken voor hoge beschikbaarheid en load balancing","Een automatische scope-migratie","Een type DHCP relay"],c:[1],h:"DHCP failover = redundantie. Als één server uitvalt, neemt de andere over zonder configuratieverlies."},
+{type:"open",q:"Welk DHCP-bericht stuurt een client als hij voor het eerst een IP-adres zoekt?",ans:["dhcp discover","discover"],h:"Het eerste bericht van de DORA-reeks. Het is een broadcast."},
+{type:"mc",q:"Hoe autoriseer je een DHCP-server in een Active Directory-omgeving?",o:["Via het computerbeheer","Via de DHCP-beheerconsole → rechtermuisklik op de server → Authorize","Via de DNS-beheerconsole","Via PowerShell enkel"],c:[1],h:"AD-omgevingen vereisen autorisatie om rogue DHCP-servers te voorkomen."},
+{type:"mc",q:"Wat is een DHCP-lease verlenging?",o:["Een nieuwe IP-aanvraag","Wanneer een client zijn lease verlengt bij de DHCP-server voordat de lease verloopt (typisch na 50% van de leaseduur)","Het verwijderen van een lease","Het overdragen van een lease"],c:[1],h:"Verlenging = de client vraagt zijn IP te mogen behouden. Gebeurt automatisch na 50% van de leasetijd."},
+{type:"mc",q:"Welk protocol wordt gebruikt voor Windows bestandsdeling?",o:["FTP","SMB (Server Message Block)","HTTP","NFS"],c:[1],h:"SMB = het protocol achter Windows shares. Poort 445 (en vroeger ook 139)."},
+{type:"mc",q:"Wat is een UNC-pad?",o:["Een type IP-adres","Universal Naming Convention pad — notatie voor netwerkmappen zoals \\\\server\\share","Een type URL","Een bestandspad op Linux"],c:[1],h:"UNC = \\\\servernaam\\sharenaam. Dit is hoe je een netwerksschijf bereikt in Windows."},
+{type:"mc",q:"Wat is het verschil tussen share-permissies en NTFS-permissies?",o:["Ze zijn identiek","Share-permissies gelden alleen bij netwerktoegang; NTFS-permissies gelden altijd (netwerk én lokaal) — de meest restrictieve wint","NTFS-permissies gelden alleen bij lokale toegang","Share-permissies zijn gedetailleerder"],c:[1],h:"Beide lagen gelden cumulatief: het meest restrictieve niveau wint. NTFS is de sterkste laag."},
+{type:"mc",q:"Wat is een verborgen share in Windows?",o:["Een share die automatisch versleuteld is","Een share waarvan de naam eindigt op '$' — niet zichtbaar bij bladeren maar bereikbaar via UNC-pad","Een share enkel voor administrators","Een share zonder permissies"],c:[1],h:"Voeg $ toe aan de sharenaam om hem te verbergen. \\\\server\\data$ is verborgen maar nog steeds bereikbaar."},
+{type:"mc",q:"Wat zijn administrative shares op Windows?",o:["Shares aangemaakt door administrators","Automatisch aangemaakte verborgen shares (C$, D$, ADMIN$, IPC$) voor beheerdoeleinden","Shares met volledige toegang voor iedereen","Shares op domain controllers"],c:[1],h:"C$, D$, ADMIN$ zijn standaard aanwezig op Windows. Automatisch en verborgen."},
+{type:"mc",q:"Hoe wijs je een netwerkschijf toe in Windows?",o:["Via de command prompt met 'net use Z: \\\\server\\share'","Via Verkenner → Computerbeheer → Schijven toewijzen","Via DHCP","Via DNS"],c:[0],h:"Net use = command-line methode. Je kunt ook via Verkenner → 'Map network drive'."},
+{type:"mc",q:"Wat is DFS (Distributed File System)?",o:["Een type NTFS-bestandssysteem","Een Windows-functie die een uniforme naamruimte biedt voor gedeelde mappen verspreid over meerdere servers","Een type RAID-configuratie","Een back-up systeem"],c:[1],h:"DFS = één logische mapstructuur over meerdere servers. Gebruikers zien één \\\\domein\\share."},
+{type:"mc",q:"Wat is Folder Redirection in Windows?",o:["Het omleiden van verkeer","Het automatisch verplaatsen van gebruikersmappen (Documenten, Bureaublad) naar een netwerklocatie — centraal beheer en back-up","Het doorsturen van DNS-queries","Een type file-sharing protocol"],c:[1],h:"Folder redirection = gebruikersdata op de server i.p.v. lokaal. Makkelijker te back-uppen."},
+{type:"mc",q:"Wat is Offline Files in Windows?",o:["Bestanden die verwijderd zijn","Een functie waarmee netwerkbestanden lokaal gecached worden zodat ze ook zonder netwerkverbinding beschikbaar zijn","Een type compressie","Een back-up functie"],c:[1],h:"Offline files = werk verder als het netwerk uitvalt. Bij herstel wordt automatisch gesynchroniseerd."},
+{type:"mc",q:"Welk Windows-commando gebruik je om actieve SMB-sessies te bekijken?",o:["net user","net session","netstat -a","arp -a"],c:[1],h:"net session toont alle actieve verbindingen naar gedeelde mappen op de server."},
+{type:"mc",q:"Wat is Business Continuity Planning (BCP)?",o:["Een type back-upstrategie","Het geheel van maatregelen om kritieke bedrijfsprocessen te laten doorgaan tijdens en na een ramp of storing","Een beveiligingsaudit","Een type serverarchitectuur"],c:[1],h:"BCP = hoe blijft het bedrijf functioneren als het misgaat? Breder dan enkel IT."},
+{type:"mc",q:"Wat is het verschil tussen BCP en DRP?",o:["Ze zijn identiek","BCP = breed (gehele organisatie, processen, mensen); DRP (Disaster Recovery Plan) = specifiek de IT-herstelprocedures","DRP = breder; BCP = IT-specifiek","BCP is voor grote bedrijven; DRP voor kleine"],c:[1],h:"DRP is een onderdeel van BCP, specifiek gericht op IT-herstel na een ramp."},
+{type:"open",q:"Wat is de afkorting voor de maximaal aanvaardbare tijd dat een systeem offline mag zijn?",ans:["rto","recovery time objective"],h:"Het gaat over TIJD: hoe lang mag de downtime duren?"},
+{type:"open",q:"Wat is de afkorting voor de maximale hoeveelheid dataverlies die aanvaardbaar is bij een ramp?",ans:["rpo","recovery point objective"],h:"Het gaat over DATA: hoeveel data mogen we kwijtraken?"},
+{type:"mc",q:"Wat is het verschil tussen RTO en RPO?",o:["Ze zijn identiek","RTO = Recovery Time Objective: max. aanvaardbare downtijd; RPO = Recovery Point Objective: max. aanvaardbaar dataverlies","RPO = hersteltijd; RTO = dataverlies","RTO is voor servers; RPO voor databases"],c:[1],h:"RTO: hoe lang mag het duren om te herstellen? RPO: hoeveel data mogen we maximaal kwijtraken?"},
+{type:"mc",q:"Een bedrijf heeft een RPO van 4 uur. Wat betekent dit voor de back-upfrequentie?",o:["Back-up elke 24 uur","Back-up elke 8 uur","Back-up minimaal elke 4 uur — anders verlies je meer data dan aanvaardbaar","Back-up enkel op weekends"],c:[2],h:"RPO = 4u → je mag max 4u data verliezen → je moet minstens elke 4u een back-up maken."},
+{type:"mc",q:"Wat is een BIA (Business Impact Analysis)?",o:["Een type beveiligingsaudit","Een analyse die bepaalt welke bedrijfsprocessen kritisch zijn en wat de impact is als ze uitvallen","Een financiële analyse","Een risicoanalyse voor cybersecurity"],c:[1],h:"BIA = welke processen zijn levensbelangrijk? Bepaalt RTO en RPO per proces."},
+{type:"mc",q:"Wat is een hot site in de context van Business Continuity?",o:["Een heet serverruimte","Een volledig uitgeruste en real-time gesynchroniseerde back-uplocatie die binnen minuten overneemt","Een externe cloud-backup","Een koude back-uplocatie"],c:[1],h:"Hot = warm, klaar, actief. Overschakeling in minuten. Meest duur maar laagste RTO."},
+{type:"mc",q:"Wat is het verschil tussen een hot site, warm site en cold site?",o:["Er is geen verschil","Hot = volledig operationeel en gesynchroniseerd; Warm = infrastructuur aanwezig maar niet up-to-date; Cold = enkel ruimte en stroom, alles nog te installeren","Cold is de snelste hersteloptie","Warm site = cloud-backup"],c:[1],h:"Hot > Warm > Cold in termen van beschikbaarheid én kosten. Trade-off tussen geld en RTO."},
+{type:"mc",q:"Wat is een SLA (Service Level Agreement)?",o:["Een type firewall-configuratie","Een formele overeenkomst die de minimaal gegarandeerde serviceniveaus vastlegt, inclusief beschikbaarheid, RTO en RPO","Een back-upstrategie","Een beveiligingsbeleid"],c:[1],h:"SLA = de belofte van beschikbaarheid. Bijv. 99,9% uptime = max 8,76 uur downtime per jaar."},
+{type:"mc",q:"Wat is MTTR?",o:["Maximum Time To Restore","Mean Time To Repair — gemiddelde tijd om een storing te herstellen","Minimum Time To Recover","Monthly Time To Rebuild"],c:[1],h:"MTTR = hoe lang duurt herstel gemiddeld? Lager = beter. Beïnvloed door procedures en tooling."},
+{type:"mc",q:"Wat is MTBF?",o:["Maximum Time Between Failures","Mean Time Between Failures — gemiddelde tijd tussen twee storingen","Minimum Time Before Failure","Monthly Time Between Fixes"],c:[1],h:"MTBF = hoe lang werkt het gemiddeld zonder storing? Hoger = betrouwbaarder."},
+{type:"mc",q:"Wat is het verschil tussen een back-up en synchronisatie?",o:["Ze zijn identiek","Back-up = punt-in-tijd kopie; synchronisatie = real-time spiegeling — verwijdering op locatie A wordt gesynchroniseerd naar B","Synchronisatie is veiliger dan back-up","Back-up is altijd in de cloud"],c:[1],h:"Sync verwijdert ook. Als je per ongeluk een bestand verwijdert, is het op beide locaties weg."},
+{type:"mc",q:"Wat is een volledige back-up (full backup)?",o:["Een back-up van alle gewijzigde bestanden","Een complete kopie van alle geselecteerde data","Een back-up enkel van systeem-configuraties","Een back-up van de database"],c:[1],h:"Full = alles. Langzaamste om te maken, snelste om te herstellen."},
+{type:"mc",q:"Wat is een incrementele back-up?",o:["Kopie van alle data","Kopie van alle data gewijzigd SINCE de laatste back-up (volledig of incrementeel)","Kopie van data gewijzigd SINCE de laatste VOLLEDIGE back-up","Kopie van systeem-configuraties"],c:[1],h:"Incrementeel = enkel wat nieuw/gewijzigd is SINCE de vorige back-up (welk type ook). Snel maar herstel is complex."},
+{type:"mc",q:"Wat is een differentiële back-up?",o:["Kopie van alle data","Kopie van alle data gewijzigd SINCE de laatste volledige back-up","Kopie van alle data gewijzigd SINCE de laatste back-up ongeacht type","Kopie van gewijzigde systeembestanden"],c:[1],h:"Differentieel = alles gewijzigd SINCE de laatste VOLLEDIGE back-up. Groeit elke dag. Herstel = full + één diff."},
+{type:"mc",q:"Wat is de 3-2-1 back-up regel?",o:["Maak 3 back-ups per dag op 2 media met 1 offsite kopie","3 kopieën van data, op 2 verschillende media-types, waarvan 1 offsite (buiten het gebouw)","Bewaar back-ups 3 jaar, controleer ze 2x per jaar, test herstel 1x per jaar","3 servers, 2 back-ups per server, 1 offsite"],c:[1],h:"3-2-1 = de gouden regel voor back-ups. Één brand vernietigt niet alle kopieën."},
+{type:"mc",q:"Wat is een air-gapped back-up?",o:["Een back-up in de cloud","Een back-up die volledig geïsoleerd is van het netwerk — niet bereikbaar voor ransomware","Een versleutelde back-up","Een back-up op SSD"],c:[1],h:"Air-gap = letterlijk een luchtspleet. Geen netwerkverbinding = ransomware kan er niet bij."},
+{type:"mc",q:"Waarom is het testen van back-ups essentieel?",o:["Om de back-up-software te controleren","Omdat een back-up die niet succesvol kan worden hersteld waardeloos is — testen bewijst dat herstel werkt","Om de back-upsnelheid te meten","Om GDPR-compliance aan te tonen"],c:[1],h:"Een back-up die je nooit getest hebt, is een back-up die je niet vertrouwt."},
+{type:"mc",q:"Wat is een back-up retentiebeleid?",o:["Het beleid voor back-up-encryptie","Het beleid dat bepaalt hoe lang back-ups worden bewaard en wanneer ze worden verwijderd","Het back-up-schema","Het type media voor back-ups"],c:[1],h:"Retentie = bewaarperiode. Compliance kan minimale bewaartermijnen opleggen (bijv. 7 jaar financieel)."},
+{type:"mc",q:"Wat is Grandfather-Father-Son (GFS) back-up rotatie?",o:["Een type back-up-compressie","Een back-up rotatieschema: dagelijks (Son), wekelijks (Father), maandelijks (Grandfather) — behoudt data over verschillende tijdshorizonten","Een type incremetele back-up","Een cloud-back-upstrategie"],c:[1],h:"GFS = meerdere generaties bewaren. Son = dagelijks; Father = wekelijks; Grandfather = maandelijks."},
+{type:"mc",q:"Wat is VSS (Volume Shadow Copy Service) op Windows?",o:["Een virusscanner","Een Windows-dienst die point-in-time snapshots van volumes maakt zodat back-ups gemaakt kunnen worden van open bestanden","Een type RAID","Een disk-encryptietool"],c:[1],h:"VSS = shadow copies. Maakt back-up van bestanden die in gebruik zijn zonder ze te sluiten."},
+{type:"mc",q:"Wat is een back-up van de 'bare metal'?",o:["Een back-up enkel van de data","Een volledige back-up van het volledige systeem inclusief OS, applicaties en configuratie zodat een leeg systeem volledig hersteld kan worden","Een back-up van enkel het OS","Een type cloud-back-up"],c:[1],h:"Bare metal restore = herstel van nul. Leeg systeem → volledig werkend systeem uit back-up."},
+{type:"mc",q:"Wat is deduplicatie bij back-ups?",o:["Het comprimeren van back-upbestanden","Het elimineren van identieke datablokken in de back-up om opslagruimte te besparen","Het versleutelen van back-ups","Het automatisch verwijderen van oude back-ups"],c:[1],h:"Deduplicatie = één exemplaar van identieke blokken. Dramatische reductie van opslagvereisten."},
+{type:"mc",q:"Wat is Active Directory (AD)?",o:["Een type back-upoplossing","Een directoryservice van Microsoft voor het beheren van gebruikers, computers en resources in een Windows-netwerk","Een type DNS-server","Een bestandssysteem"],c:[1],h:"AD = het centrale beheerssysteem voor een Windows-domein. Gebruikers, computers, beleid — alles erin."},
+{type:"mc",q:"Wat is een Domain Controller (DC)?",o:["Een beheerder met domeinrechten","Een server die de Active Directory-database beheert en authenticatie verzorgt voor het domein","Een type router","Een DNS-server"],c:[1],h:"DC = de server waarop AD draait. Authenticatie van gebruikers verloopt via de DC."},
+{type:"mc",q:"Wat is Group Policy (GPO)?",o:["Een type gebruikersgroep","Een mechanisme in AD om instellingen, beveiliging en software centraal toe te passen op computers en gebruikers","Een type firewall-regel","Een back-upbeleid"],c:[1],h:"GPO = centrale beleidstoepassing. Één instelling beheren voor duizenden computers tegelijk."},
+{type:"mc",q:"Wat is RAID en waarvoor dient het?",o:["Redundant Array of Independent Disks — combineert meerdere harde schijven voor hogere betrouwbaarheid en/of prestaties","Een type back-up","Een netwerk-opslagprotocol","Een type serverarchitectuur"],c:[0],h:"RAID = meerdere schijven als één logisch volume. RAID 1 = mirror; RAID 5 = pariteit."},
+{type:"mc",q:"Wat is het verschil tussen RAID 1 en RAID 5?",o:["Ze zijn identiek","RAID 1 = volledige spiegel (2 schijven, 50% efficiëntie); RAID 5 = pariteitsblokken over minstens 3 schijven (kan 1 schijf verliezen)","RAID 5 is sneller in alle opzichten","RAID 1 beschermt tegen meer schijffouten"],c:[1],h:"RAID 1 = simpele mirror. RAID 5 = efficiënter (n-1 schijven bruikbaar) maar complexer herstel."},
+{type:"mc",q:"Waarom is RAID GEEN back-up?",o:["RAID is duurder dan back-ups","RAID beschermt tegen schijffouten maar niet tegen data-corruptie, ransomware, accidentele verwijdering of brand","RAID en back-up zijn identiek","RAID is sneller dan back-ups"],c:[1],h:"RAID repliceert alles: ook fouten, corruptie en ransomware worden gespiegeld. Je hebt beiden nodig."},
+{type:"mc",q:"Wat is een UPS (Uninterruptible Power Supply)?",o:["Een type server","Een noodstroomvoorziening die stroom levert bij stroomuitval om systemen gecontroleerd af te sluiten of te laten doorwerken","Een type netwerkapparaat","Een back-up-opslagmedium"],c:[1],h:"UPS = noodstroom. Beschermt tegen stroomuitval en spanningsproblemen."},
+{type:"mc",q:"Wat is een SAN (Storage Area Network)?",o:["Een type VLAN","Een dedicated netwerk voor opslag dat block-level storage beschikbaar stelt aan servers — hogere prestaties dan NAS","Een type back-upsysteem","Een draadloos netwerk voor storage"],c:[1],h:"SAN = snel, block-level, voor productieomgevingen. NAS = file-level, makkelijker maar trager."},
+{type:"mc",q:"Wat is een NAS (Network Attached Storage)?",o:["Een type server","Een opslagapparaat verbonden met het netwerk dat file-level storage (via SMB/NFS) beschikbaar stelt","Een type SAN","Een back-upserver"],c:[1],h:"NAS = eenvoudige netwerkopslag. Iedereen op het netwerk kan mappen mounten via SMB of NFS."},
+{type:"mc",q:"Wat is Server Core in Windows Server?",o:["Een verouderde versie van Windows Server","Een minimale installatie zonder grafische interface — kleiner aanvalsoppervlak, lager resourceverbruik","Een type serverrol","Een type RAID-configuratie"],c:[1],h:"Server Core = command-line only. Minder software = minder kwetsbaarheden = veiliger."},
+{type:"mc",q:"Wat is de rol van een WSUS-server (Windows Server Update Services)?",o:["Een DNS-server","Een server die Windows-updates centraal beheert en distribueert aan clients in het netwerk","Een back-upserver","Een monitoringserver"],c:[1],h:"WSUS = interne Microsoft Update-server. Controleer welke updates uitgerold worden en wanneer."},
+{type:"mc",q:"Wat is de Sysvol-map in een Windows-domein?",o:["Een map voor gebruikersprofielen","Een gedeelde map op domain controllers die logon scripts, GPO-bestanden en andere domeinbrede data bevat — gerepliceerd tussen alle DCs","Een map voor back-ups","Een map voor DNS-zones"],c:[1],h:"SYSVOL = gedeeld op alle DCs. Bevat GPO-templates en logon scripts. Gerepliceerd via DFSR."},
+{type:"open",q:"Welk Windows Server commando gebruik je om informatie te bekijken over DHCP-leases op de server?",ans:["get-dhcpserverv4lease","netsh dhcp server show clients","show clients"],h:"Het PowerShell commando begint met 'Get-DhcpServer'."},
+{type:"mc",q:"Wat is PowerShell en waarom is het belangrijk voor serverbeheer?",o:["Een type database","Een krachtige shell en scripttaal voor Windows-automatisering — maakt herhaalde taken automatiseerbaar en reproduceerbaar","Een type GUI-tool","Een type beveiligingssoftware"],c:[1],h:"PowerShell = automatisering. Eén script kan duizenden servers configureren."},
+{type:"mc",q:"Wat is het verschil tussen een workgroup en een domein op Windows?",o:["Ze zijn identiek","Workgroup = decentraal, elke PC beheert zijn eigen gebruikers; Domein = centraal, AD-server beheert alle gebruikers en beleid","Domein = kleiner; workgroup = groter","Workgroup vereist een server; domein niet"],c:[1],h:"Domein = centraal beheer via Active Directory. Workgroup = peer-to-peer, geen centrale server."},
+{type:"mc",q:"Wat is een roaming profiel in Windows?",o:["Een profiel voor mobiele gebruikers","Een gebruikersprofiel dat opgeslagen is op een netwerkserver zodat de gebruiker zijn instellingen heeft op elke computer in het domein","Een profiel met beperkte rechten","Een back-up van een gebruikersprofiel"],c:[1],h:"Roaming = mee met de gebruiker. Log in op computer A of B — zelfde bureaublad, zelfde instellingen."},
+{type:"mc",q:"Wat is een mandatory profiel in Windows?",o:["Een verplicht beveiligingsprofiel","Een read-only gebruikersprofiel — wijzigingen worden niet opgeslagen bij afmelden. Nuttig voor kiosk-systemen","Een profiel met administrator-rechten","Een profiel dat automatisch wordt aangemaakt"],c:[1],h:"Mandatory = verplicht, onveranderlijk. Elke keer inloggen = hetzelfde schone profiel."},
+{type:"mc",q:"Een gebruiker kan 's morgens inloggen maar 's avonds niet meer. De DNS-server wijst een ander IP toe. Wat is het probleem?",o:["De gebruiker heeft het verkeerde wachtwoord","De DNS-TTL is verlopen en een gewijzigd A-record wijst nu naar een andere server — controleer DNS-records","De DHCP-lease is verlopen","De switch is geconfigureerd fout"],c:[1],h:"Wisselend IP via DNS = waarschijnlijk een gewijzigd A-record of laag TTL-waarde."},
+{type:"mc",q:"Een back-up duurt te lang. Je wisselt van full naar incrementeel. Wat is het nadeel?",o:["Geen nadelen","Herstel is complexer: je hebt de laatste full backup + ALLE incrementele back-ups sindsdien nodig","Incrementeel gebruikt meer ruimte","Incrementeel is niet betrouwbaar"],c:[1],h:"Incrementeel = snel maken, traag herstellen. Je moet de volledige ketting rebuilden."},
+{type:"mc",q:"Ransomware versleutelt alle bestanden inclusief de netwerkschijf. Welke back-upstrategie had dit voorkomen?",o:["Een dagelijkse full backup op de netwerkschijf","Een air-gapped of offsite back-up die niet via het netwerk bereikbaar is voor de ransomware","Een RAID 1-configuratie","Een hot site"],c:[1],h:"Ransomware versleutelt alles bereikbaar via het netwerk. Air-gap = niet bereikbaar = veilig."},
+{type:"mc",q:"Een DHCP-server valt uit. Clients krijgen geen IP meer. Welke oplossing biedt hoge beschikbaarheid?",o:["Een tweede scope op dezelfde server","DHCP failover configureren tussen twee servers","Een statisch IP geven aan alle clients","Een superscope aanmaken"],c:[1],h:"DHCP failover = twee servers die elkaars scopes kennen en overnemen bij uitval."},
+{type:"mc",q:"Je voegt een nieuwe DNS-zone toe maar clients kunnen de naam niet resolven. Wat controleer je als eerste?",o:["De firewall","Of de zone correct aangemaakt is, de A-records kloppen en de clients de juiste DNS-server gebruiken","Of DHCP correct geconfigureerd is","Of de router correct geconfigureerd is"],c:[1],h:"Troubleshoot DNS in volgorde: zone aangemaakt? Records correct? Client wijst naar juiste DNS-server?"},
+{type:"mc",q:"Je wil dat alle gebruikers in het domein een beveiligde screensaver krijgen na 10 minuten. Wat gebruik je?",o:["Een manuele configuratie per PC","Een Group Policy Object (GPO) gekoppeld aan de domain-OU","Een logon script","Een registry-aanpassing op elke PC"],c:[1],h:"GPO = één keer instellen, automatisch toepassen op alle computers in scope."},
+{type:"mc",q:"Een server heeft RAID 5 en één schijf is uitgevallen. Wat doe je als eerste?",o:["De server onmiddellijk uitzetten","De uitgevallen schijf vervangen — RAID 5 kan werken met één uitgevallen schijf maar is kwetsbaar tot de rebuild voltooid is","Een full backup maken","De server herstarten"],c:[1],h:"RAID 5 = one disk failure tolerance. Bij een tweede schijffout verlies je alles — vervang snel!"},
+{type:"mc",q:"Een gebruiker kan bestanden op een share lezen maar niet schrijven, hoewel de share-permissie 'Full Control' is. Wat is het probleem?",o:["De share is corrupt","De NTFS-permissies geven de gebruiker alleen leesrechten — NTFS-permissies overschrijven share-permissies als ze restrictiever zijn","De server is uitgevallen","DNS is fout geconfigureerd"],c:[1],h:"Share-permissies + NTFS-permissies = het meest restrictieve niveau wint. Controleer de NTFS-laag."},
+{type:"mc",q:"Je RTO is 2 uur maar de restore van de back-up duurt 4 uur. Wat doe je?",o:["De RTO verhogen","De back-upstrategie aanpassen (hot site, replicatie, snellere media) of de herstelprocedure optimaliseren","De back-upfrequentie verhogen","Een tweede back-up maken"],c:[1],h:"Als de restore de RTO overschrijdt, moet je architectuur veranderen — niet de RTO."},
+{type:"mc",q:"Wat is het gevaar van het bewaren van alle back-ups op één locatie?",o:["Geen gevaar","Brand, overstroming of diefstal op die locatie vernietigt alle back-ups — gebruik de 3-2-1 regel met offsite opslag","Het vertraagt de restore","Het kost meer opslagruimte"],c:[1],h:"Één locatie = single point of failure voor back-ups. De 3-2-1 regel vereist minstens één offsite."},
+{type:"mc",q:"Wat is een DNS Conditional Forwarder?",o:["Een algemene forwarder voor alle DNS","Een forwarder die queries voor een specifiek domein stuurt naar een aangewezen DNS-server — nuttig voor interne domeinen","Een type DNS-zone","Een type DNS-record"],c:[1],h:"Conditional forwarder = stuur queries voor intern.bedrijf.be naar de interne DNS-server, de rest naar ISP."},
+{type:"mc",q:"Wat is een DNS stub zone?",o:["Een lege DNS-zone","Een zone die enkel de NS- en SOA-records bevat van een andere zone — voor efficiënte delegatie zonder volledige zone transfer","Een type primaire zone","Een type secundaire zone"],c:[1],h:"Stub zone = minimale info. Weet wie autoritatief is, vraagt die server rechtstreeks. Geen volledige kopie nodig."},
+{type:"mc",q:"Wat is DNSSEC en welk probleem lost het op?",o:["Versleutelt DNS-verkeer","Voegt digitale handtekeningen toe aan DNS-records om te verifiëren dat ze authentiek zijn — beschermt tegen DNS cache poisoning","Een type DNS-forwarder","Een type DNS-record"],c:[1],h:"DNSSEC = digitale handtekeningen op DNS. Cache poisoning verstuurde valse records — DNSSEC maakt dit detecteerbaar."},
+{type:"mc",q:"Wat is een TTL-waarde in DNS en welk effect heeft een lage TTL?",o:["Hoe lang de DNS-server actief is","Hoe lang een DNS-record gecached mag worden — lage TTL = vaker opvragen (meer DNS-verkeer) maar snellere propagatie van wijzigingen","Hoe lang een DNS-query duurt","De maximale recordgrootte"],c:[1],h:"Lage TTL = snel propageren maar meer DNS-load. Hoge TTL = minder load maar trage wijzigingen. Balans zoeken."},
+{type:"mc",q:"Wat is een DNS delegation?",o:["Het doorgeven van DNS-verantwoordelijkheid","Het overdragen van de autoritaire verantwoordelijkheid voor een subdomein aan een andere set nameservers","Een type DNS-forwarder","Een type DNS-record"],c:[1],h:"Delegation via NS-records + glue records. ap.be delegeert leer.ap.be naar de interne DNS van AP."},
+{type:"mc",q:"Hoe test je DNS-resolutie op Windows?",o:["Via de taakbeheerder","Via nslookup of Resolve-DnsName PowerShell commando","Via de event viewer","Via de netwerkconfiguratie"],c:[1],h:"nslookup = klassiek. Resolve-DnsName = PowerShell equivalent. Beide zijn nuttig voor DNS-troubleshooting."},
+{type:"open",q:"Welk DNS-record gebruik je om een tekst-gebaseerde verificatie (bijv. domeinverificatie, SPF) op te slaan?",ans:["txt","txt record"],h:"Het recordtype dat tekst opslaat — één van de meest veelzijdige DNS-records."},
+{type:"mc",q:"Wat is een SRV-record in DNS?",o:["Een type A-record","Een record dat de locatie (host + poort) van een specifieke dienst aangeeft — bijv. voor SIP, XMPP, SRV voor Active Directory","Een type MX-record","Een type CNAME"],c:[1],h:"SRV = Service Location Record. Active Directory gebruikt SRV-records om DC's en LDAP-servers te adverteren."},
+{type:"mc",q:"Wat is een 'split DNS' of 'split-horizon DNS'?",o:["Een defecte DNS-configuratie","Twee DNS-views voor hetzelfde domein — intern retourneert private IPs, extern retourneert publieke IPs","Een type DNS-redundantie","Een type DNSSEC-configuratie"],c:[1],h:"Split DNS = intern en extern andere antwoorden. Intern gebruikers → private server. Extern gebruikers → load balancer."},
+{type:"mc",q:"Wat is een DHCP lease renewal en wanneer begint het?",o:["Wanneer de lease verloopt","Een client begint automatisch te verlengen na 50% van de leaseduur (T1) en bij 87.5% probeert hij elke server","Na handmatige actie","Na elke herstart"],c:[1],h:"T1 = 50% → verlenging bij eigen server. T2 = 87.5% → verlenging bij elke DHCP-server (broadcast)."},
+{type:"mc",q:"Wat is de DHCP Option 43?",o:["De standaard gateway-optie","Een vendor-specifieke optie die informatie doorstuurt die enkel bepaalde apparaten verstaan — bijv. WAP-configuratieserver","De DNS-server optie","De domeinnaam-optie"],c:[1],h:"Option 43 = vendor-specifiek. Cisco APs gebruiken het om hun WLC-adres te ontvangen via DHCP."},
+{type:"mc",q:"Wat is DHCP Option 82 (Relay Agent Information)?",o:["De gateway-optie","Informatie toegevoegd door de relay agent die aangeeft van welk netwerksegment de DHCP-request komt — nuttig voor audit en beleidstoepassing","De DNS-server optie","De lease-duur optie"],c:[1],h:"Option 82 = identificeer de client-locatie. Welke switch, welke poort? Nuttig voor IP-adresbeleid per locatie."},
+{type:"mc",q:"Wat is een Windows Server RRAS (Routing and Remote Access Service)?",o:["Een type back-up dienst","Een Windows Server-rol die routing, VPN en dial-up toegang biedt","Een type DNS-dienst","Een type DHCP-dienst"],c:[1],h:"RRAS = Windows router + VPN-server. Biedt site-to-site VPN, DirectAccess en SSTP-VPN."},
+{type:"mc",q:"Wat is DirectAccess in Windows Server?",o:["Een type VPN","Een automatisch en transparant VPN-alternatief voor Windows-clients die altijd verbonden zijn met het bedrijfsnetwerk — geen manuele VPN-verbinding nodig","Een type remote desktop","Een type DNS-dienst"],c:[1],h:"DirectAccess = altijd-aan VPN. Client is verbonden met het domein, ook als medewerker thuis werkt."},
+{type:"mc",q:"Wat is een Windows Server WSUS-server?",o:["Een type DNS-server","Windows Server Update Services — centraliseert en controleert de distributie van Microsoft updates","Een type back-up server","Een type DHCP-server"],c:[1],h:"WSUS = interne Windows Update. Keur updates goed voor uitrol, plan uitrolvensters, rapporteer compliance."},
+{type:"mc",q:"Wat is een GPO (Group Policy Object)?",o:["Een type gebruikersaccount","Een beleidscontainer die instellingen definieert voor computers en gebruikers in een Active Directory-omgeving","Een type server-rol","Een type DNS-record"],c:[1],h:"GPO = centraal beleid. Screensaver na 5 min, geen USB, bepaalde software blokkeren — alles via GPO."},
+{type:"mc",q:"Hoe koppel je een GPO aan een OU in Active Directory?",o:["Via de command line","Via Group Policy Management Console (GPMC) → rechtermuisklik op OU → Link an Existing GPO","Via het register","Via PowerShell enkel"],c:[1],h:"GPMC = de tool voor GPO-beheer. Link GPO aan site, domein of OU — vereffening van specifiek naar algemeen."},
+{type:"mc",q:"Wat is 'GPO inheritance' in Active Directory?",o:["GPOs gelden enkel voor één OU","GPOs worden overgeërfd van bovenliggende containers — een GPO op het domein geldt voor alle OUs, tenzij geblokkeerd","GPOs worden niet gedeeld","GPOs overschrijven altijd lokale instellingen"],c:[1],h:"Inheritance = van boven naar beneden. Domain → OU → sub-OU. Meer specifieke GPO kan overschrijven."},
+{type:"mc",q:"Wat is 'GPO enforcement' (No Override)?",o:["GPO kan niet gewijzigd worden","Een GPO-instelling die ervoor zorgt dat de GPO NIET kan worden geblokkeerd door lagere containers — zelfs niet door een 'Block Inheritance'","GPO wordt versneld verwerkt","GPO geldt enkel voor computers"],c:[1],h:"Enforce = forceer. Hogere GPO blijft gelden, ook als een sub-OU Block Inheritance heeft."},
+{type:"mc",q:"Wat is 'Block Inheritance' in Active Directory GPO-beheer?",o:["Blokkeert de GPO-verwerking","Voorkomt dat GPOs van bovenliggende containers worden toegepast op een specifieke OU","Blokkeert wachtwoordbeleid","Blokkeert computer-GPOs"],c:[1],h:"Block Inheritance = stop GPOs van boven. Maar Enforced GPOs passeren zelfs Block Inheritance."},
+{type:"mc",q:"Wat is een 'loopback processing' GPO-instelling?",o:["Een type netwerk-loopback","Een GPO-instelling die bepaalt dat computer-GPOs gebruikt worden voor de gebruikersinstellingen — nuttig voor kiosk/terminal-omgevingen","Een type DNS-instelling","Een type DHCP-instelling"],c:[1],h:"Loopback = de computer-context bepaalt de gebruikersinstellingen. Nuttig als je wil dat de locatie (computer) bepaalt wat de gebruiker kan."},
+{type:"mc",q:"Wat is SYSVOL in Windows Server en waarom is het belangrijk?",o:["Een type volume","Een gedeelde map op elke DC die logon scripts, GPO-templates en domein-bestanden bevat — gerepliceerd via DFSR","Een type back-up","Een type DNS-zone"],c:[1],h:"SYSVOL = domein-gedeelde opslag voor GPOs en scripts. Gerepliceerd naar alle DCs via DFSR."},
+{type:"mc",q:"Wat is DFSR (Distributed File System Replication)?",o:["Een type back-up","Een Windows-replicatietechnologie die SYSVOL en DFS-namespaces repliceert tussen servers","Een type DNS-replicatie","Een type DHCP-replicatie"],c:[1],h:"DFSR = repliceer SYSVOL efficiënt. Vervangt de verouderde FRS (File Replication Service)."},
+{type:"mc",q:"Wat is een DFS Namespace?",o:["Een type DNS-namespace","Een virtuele mapstructuur die gedeelde mappen op meerdere servers combineert achter één UNC-pad","Een type Active Directory-namespace","Een type replicatienaamruimte"],c:[1],h:"DFS Namespace = \\\\domein\\data achter één naam, data verspreid over meerdere servers."},
+{type:"mc",q:"Wat is een Active Directory OU (Organizational Unit)?",o:["Een type gebruikersgroep","Een container in Active Directory om objecten (gebruikers, computers) logisch te organiseren en er GPOs aan te koppelen","Een type domein","Een type forest"],c:[1],h:"OU = de mappen van Active Directory. Organiseer per afdeling, locatie of functie. Koppel GPOs aan OUs."},
+{type:"mc",q:"Wat is het verschil tussen een AD-groep en een OU?",o:["Ze zijn identiek","OU = containerobject voor organisatie en GPO-koppeling; Groep = security-object voor toegangscontrole en e-maildistributie","Groepen zijn voor GPOs; OUs voor toegangscontrole","OUs zijn voor computers; groepen voor gebruikers"],c:[1],h:"OU = organiseer en beheer. Groep = sta toegang toe. Gebruiker in OU Verkoop, lid van groep VerkeerShareAccess."},
+{type:"mc",q:"Wat is een Active Directory trust?",o:["Een type beveiliging","Een relatie tussen twee domeinen of forests die authenticatie tussen hen mogelijk maakt","Een type back-up","Een type replicatie"],c:[1],h:"Trust = vertrouw de gebruikers uit een ander domein. Bijv. twee bedrijven fuseren — forest trust creëren."},
+{type:"mc",q:"Wat is een FSMO-rol (Flexible Single Master Operation)?",o:["Een type DNS-rol","Een speciale Active Directory-rol die slechts door één DC tegelijk uitgevoerd wordt — bijv. PDC Emulator, RID Master","Een type DHCP-rol","Een type groep"],c:[1],h:"FSMO-rollen = unieke taken die slechts één DC mag uitvoeren. Vijf rollen, verdeeld over DC's."},
+{type:"mc",q:"Wat doet de PDC Emulator FSMO-rol?",o:["Dupliceert alle DCs","De primaire tijdsbron voor het domein, behandelt wachtwoordwijzigingen, account lockouts en is de bron voor GPO-bewerkingen","Verdeelt RID's","Beheert de forest-schema"],c:[1],h:"PDC Emulator = de baas-DC. Tijdsynchronisatie, wachtwoordwijzigingen, lockouts — allemaal naar de PDC."},
+{type:"mc",q:"Wat is Windows Server Failover Clustering?",o:["Een type back-up","Een technologie waarbij meerdere servers samenwerken als cluster — bij uitval van één node neemt een andere automatisch over","Een type RAID","Een type replicatie"],c:[1],h:"Failover clustering = hoge beschikbaarheid voor kritieke diensten. SQL Server, Hyper-V, File Server — allemaal clusterbaar."},
+{type:"mc",q:"Wat is Hyper-V en welke rol speelt het in Business Continuity?",o:["Een type database","Microsoft's hypervisor voor virtualisatie — VMs kunnen snel gemigreerd of gerepliceerd worden voor disaster recovery","Een type back-up","Een type netwerk"],c:[1],h:"Hyper-V + replicatie = VM's live migreren of repliceren naar een DR-site. RTO en RPO drastisch verlagen."},
+{type:"mc",q:"Wat is Azure Site Recovery in Business Continuity context?",o:["Een type DNS-dienst","Een Microsoft cloud-dienst die on-premises servers repliceert naar Azure voor cloud-gebaseerde disaster recovery","Een type back-up software","Een type replicatieprotocol"],c:[1],h:"Azure Site Recovery = DR in de cloud. Failover naar Azure als het eigen datacenter uitvalt."},
+{type:"mc",q:"Wat is een Recovery Point in de context van back-ups?",o:["Een type back-up-server","Een specifiek punt in de tijd waarnaar een systeem hersteld kan worden — overeenkomend met een back-up die genomen werd op dat moment","Een type snapshot","Een type checkpoint"],c:[1],h:"Recovery point = het moment in de tijd waarnaar je kunt herstellen. Frequentere back-ups = meer recovery points."},
+{type:"mc",q:"Wat is een 'image-based backup'?",o:["Een back-up van afbeeldingen","Een back-up van het volledige volume inclusief OS, apps en data als één schijfimage — voor snelle bare metal restore","Een type incrementele back-up","Een type database back-up"],c:[1],h:"Image-based = alles als één bestand. Sneller herstellen dan bestandsgebaseerde back-up. Grotere back-upbestanden."},
+{type:"mc",q:"Wat is een 'file-level backup'?",o:["Een back-up van één bestand","Een back-up die individuele bestanden en mappen opslaat — flexibeler voor het herstellen van specifieke bestanden maar trager bij volledige systeem-restore","Een type image-based backup","Een type database back-up"],c:[1],h:"File-level = selectief herstellen. Wil je enkel document.docx terug? File-level back-up is de keuze."},
+{type:"mc",q:"Wat is een cloud-back-up en welke voordelen biedt het?",o:["Een back-up van cloudservices","Een back-up opgeslagen in de cloud — offsite, schaalbaar, geen hardware-beheer, toegankelijk van overal","Een type lokale back-up","Een type tape-back-up"],c:[1],h:"Cloud back-up = offsite zonder eigen hardware. Voldoet automatisch aan het 3-2-1 principe (offsite-kopie)."},
+{type:"mc",q:"Wat is een tape-back-up en wanneer is het nog relevant?",o:["Verouderde technologie zonder gebruik","Een back-up op magneetband — goedkoop per GB, offline (air-gapped), lange bewaarperiode — relevant voor archief en compliance","Altijd beter dan cloud","Een type deduplicatie"],c:[1],h:"Tape = goedkoop archief. Offline = niet bereikbaar voor ransomware. Gebruikt door grote enterprise voor langetermijn-bewaring."},
+{type:"mc",q:"Wat is 'continuous data protection' (CDP)?",o:["Een type dagelijkse back-up","Een back-uptechnologie die alle wijzigingen real-time vastlegt zodat je kunt herstellen naar elk moment in de tijd (RPO ≈ 0)","Een type synchronisatie","Een type replicatie"],c:[1],h:"CDP = near-zero RPO. Elke write wordt vastgelegd. Herstel naar 'net voor de fatale actie' is mogelijk."},
+{type:"mc",q:"Wat is een 'backup window'?",o:["Het tijdstip van de back-up","De tijdsperiode (typisch 's nachts) waarin back-ups uitgevoerd worden zonder impact op de productie — kritieke factor voor back-upplanning","De duur van een back-up","De retentieperiode"],c:[1],h:"Backup window = beschikbare tijd voor back-up. Volle back-up in 6 uur = goed. 48 uur = probleem."},
+{type:"mc",q:"Wat is een NAS (Network Attached Storage) back-up target?",o:["Een type server","Een netwerk-opslagapparaat dat als back-up-bestemming wordt gebruikt — eenvoudig, goedkoop, snel toegankelijk","Een type tape-system","Een type cloud back-up"],c:[1],h:"NAS als back-up target = snel en makkelijk. Voeg ook een offsite kopie toe voor 3-2-1 compliance."},
+{type:"mc",q:"Wat is Windows Server Backup?",o:["Een type antivirus","De ingebouwde back-up tool van Windows Server voor bestandsniveau, volume en bare metal restore","Een type monitoring","Een type replicatie"],c:[1],h:"Windows Server Backup = gratis ingebouwde back-up. Beperkt maar voldoende voor kleine omgevingen."},
+{type:"mc",q:"Wat is een 'disaster recovery drill'?",o:["Een type brand-training","Een geoefend scenario waarbij het DRP getest wordt door een noodgeval te simuleren — bewijst dat herstel ook echt werkt","Een type monitoring","Een type audit"],c:[1],h:"DR drill = oefenen voor het echte geval. Ontdek problemen in je DRP voor je ze in crisis nodig hebt."},
+{type:"mc",q:"Wat is RTO vs. downtime cost?",o:["Ze zijn identiek","RTO is de maximaal aanvaardbare downtime; als de werkelijke hersteltijd de RTO overschrijdt, overtreft de schade wat acceptabel is","RTO is altijd groter","Downtime cost is irrelevant"],c:[1],h:"RTO bepaal je door de maximale schade te berekenen die acceptabel is. Langere downtime = meer schade."},
+{type:"mc",q:"Wat is een 'tabletop exercise' in Business Continuity?",o:["Een type technische test","Een bespreking van een noodscenario door stakeholders zonder systemen te activeren — test kennismaking met procedures","Een type DR drill","Een type audit"],c:[1],h:"Tabletop = discussie-oefening. Goedkoop, snel. Ontdek gaten in kennis en procedures zonder systemen te activeren."},
+{type:"mc",q:"Wat is een 'BCP scope' in Business Continuity Planning?",o:["De omvang van het back-up systeem","De afbakening van welke processen, systemen en mensen het BCP dekt en welke niet","De duur van het BCP","De kosten van het BCP"],c:[1],h:"Scope = grenzen van het plan. Welke afdelingen? Welke systemen? Buiten de scope = niet gedekt door het BCP."},
+{type:"mc",q:"Wat is een 'crisis communication plan' als onderdeel van BCP?",o:["Een marketingstrategie","Een plan dat beschrijft wie communiceert met wie tijdens een incident — intern (medewerkers) en extern (klanten, media, overheid)","Een type escalatieplan","Een type back-upplan"],c:[1],h:"Crisis communicatie = wie zegt wat aan wie. Zonder dit plan leiden geruchten tot extra schade."},
+{type:"mc",q:"Wat is een 'service dependency mapping' in BIA?",o:["Een type netwerktopologie","Het in kaart brengen welke IT-services van andere services afhangen — als A wegvalt, wat gaat dan ook fout?","Een type monitoring","Een type audit"],c:[1],h:"Dependency mapping = domino-effect visualiseren. Email server weg? → CRM weg? → Verkoop platgelegd?"},
+{type:"mc",q:"Wat is het verschil tussen een 'hot standby' en een 'warm standby'?",o:["Ze zijn identiek","Hot standby = real-time gesynchroniseerd, direct failover; Warm standby = periodiek gesynchroniseerd, langere failover-tijd","Warm standby is sneller","Hot standby is goedkoper"],c:[1],h:"Hot = direct over, warm = minuten tot uren. Hot kost meer, warm is goedkoper. Kies op basis van RTO."},
+{type:"mc",q:"Wat is een 'health check' in de context van servers en services?",o:["Een medische check voor IT-personeel","Automatische controles die periodiek verifiëren of een service correct functioneert — gebruikt door load balancers en monitoring-tools","Een type audit","Een type monitoring-alert"],c:[1],h:"Health check = is de service OK? Load balancers sturen geen verkeer naar unhealthy servers."},
+{type:"mc",q:"Wat is een Windows Server 'Server Core' installatie en waarom kiezen beheerders daarvoor?",o:["Een installatie met minder features","Een installatie zonder grafische interface — kleiner aanvalsoppervlak, lager geheugenverbruik, minder patches nodig","Een type virtuele machine","Een type container"],c:[1],h:"Server Core = command-line only. Minder software = minder kwetsbaarheden. Microsoft adviseert Server Core."},
+{type:"mc",q:"Wat is een Windows Server 'Nano Server'?",o:["Een kleine fysieke server","Een ultra-minimale Windows Server installatieoptie voor containers en cloud — geen lokale login mogelijk","Een type back-up server","Een type domain controller"],c:[1],h:"Nano Server = kleiner dan Server Core. Enkel voor containers en moderne cloud-workloads."},
+{type:"mc",q:"Wat is de purpose van een 'jump server' (bastion host)?",o:["Een type back-up server","Een beveiligde toegangsserver die als enige directe verbinding heeft met productie-servers — beheerders loggen eerst in op de jump server","Een type proxy server","Een type DNS-server"],c:[1],h:"Jump server = toegangspoort. Je logt in op de jump server → dan naar de productie-server. Nooit rechtstreeks."},
+{type:"mc",q:"Wat is een Windows Server Deduplicatie feature?",o:["Een type back-up","Een storage-optimalisatietechnologie die identieke datablokken in bestanden detecteert en slechts één exemplaar opslaat","Een type replicatie","Een type RAID"],c:[1],h:"Deduplicatie = bewaar één exemplaar van herhalende data. 60-80% opslagbesparing op typische file servers."},
+{type:"mc",q:"Wat is het doel van 'Windows Server Essentials Experience'?",o:["Een type beheerdersinterface","Een vereenvoudigde serverervaring voor kleine bedrijven met ingebouwde functies voor back-up, remote access en dashboard","Een type Active Directory","Een type replicatiedienst"],c:[1],h:"Essentials = Windows Server voor kleine bedrijven. Eenvoudigere beheerinterface, ingebouwde essentiële functies."},
+{type:"open",q:"Welk PowerShell commando gebruik je om de DNS-serverrol te installeren op Windows Server?",ans:["install-windowsfeature dns","install-windowsfeature -name dns","install-windowsfeature dns -includemanagementtools"],h:"Gebruik Install-WindowsFeature in PowerShell. De rolnaam voor DNS is 'DNS'."},
+{type:"mc",q:"Wat is het verschil tussen een primaire en secundaire DNS-zone op Windows Server?",o:["Ze zijn identiek","Primaire zone = bewerkbare master; Secundaire zone = read-only kopie die via zone transfer bijgewerkt wordt","Secundaire zone is bewerkbaar","Primaire zone is read-only"],c:[1],h:"Primair = de bron. Secundair = de kopie. Wijzigingen altijd op de primaire server, secundaire volgt automatisch."},
+{type:"mc",q:"Wat is een DNS 'aging and scavenging'?",o:["Een type DNS-beveiliging","Een Windows DNS-feature die verouderde DNS-records automatisch detecteert en verwijdert — voorkomt 'DNS-vuilnis'","Een type DNS-delegatie","Een type DNS-replica"],c:[1],h:"Aging = meet hoe oud een record is. Scavenging = verwijder records ouder dan de no-refresh + refresh interval."},
+{type:"mc",q:"Wat is een DHCP split scope?",o:["Een scope verdeeld over twee subnetten","Een configuratie waarbij de DHCP-scope verdeeld wordt over twee servers (bijv. 80/20) voor redundantie zonder failover-configuratie","Een type superscope","Een type DHCP-optie"],c:[1],h:"Split scope = 80% op server A, 20% op server B. Als A uitvalt, deelt B de resterende adressen uit (trage failover)."},
+{type:"mc",q:"Wat is een 'DHCP lease database' en waar staat die op Windows Server?",o:["Een type bestand","De database (%systemroot%\\system32\\dhcp) die alle actieve leases bijhoudt — belangrijk om te back-uppen voor herstel","Een type registratie","Een type DNS-record"],c:[1],h:"DHCP lease database = wie heeft welk IP-adres. Bij servercrash zonder back-up: IP-conflicten bij herstart."},
+{type:"mc",q:"Wat is een 'Domain Functional Level' in Active Directory?",o:["Het beveiligingsniveau van het domein","De minimale Windows Server-versie die alle DCs draaien — bepaalt welke AD-features beschikbaar zijn","Het aantal gebruikers","Het aantal DCs"],c:[1],h:"Functional level = de 'laagste gemeenschappelijke deler'. Verhoog het als alle DCs bijgewerkt zijn voor nieuwe features."},
+{type:"mc",q:"Wat is een 'read-only domain controller' (RODC)?",o:["Een DC die enkel leest","Een DC die een read-only kopie van de AD-database heeft — voor fysiek onveilige locaties waar een DC nodig is maar niet vertrouwd wordt","Een type back-up DC","Een type proxy DC"],c:[1],h:"RODC = DC voor onveilige locaties. Bijkantoor met slechte fysieke beveiliging? RODC zodat diefstal minder schade berokkent."},
+{type:"mc",q:"Wat is 'fine-grained password policy' in Windows Server?",o:["Een type wachtwoordbeleid voor alle gebruikers","De mogelijkheid om per groep of gebruiker een ander wachtwoordbeleid te definiëren — onafhankelijk van het domeinwachtwoordbeleid","Een type GPO","Een type beveiligingsgroep"],c:[1],h:"Fine-grained = granulair wachtwoordbeleid. IT-administrators krijgen een sterker beleid dan gewone gebruikers."},
+{type:"mc",q:"Wat is het doel van een 'service account' in Windows?",o:["Een account voor klanten","Een account gebruikt door services en applicaties om met Windows-resources te interageren — met minimale privileges","Een type administrator-account","Een type gastaccount"],c:[1],h:"Service account = least privilege voor diensten. Niet de administrator-account gebruiken voor services!"},
+{type:"mc",q:"Wat is een 'gMSA' (group Managed Service Account)?",o:["Een type gebruikersgroep","Een Managed Service Account dat automatisch zijn wachtwoord roteert en door meerdere servers gebruikt kan worden","Een type beveiligingsgroep","Een type roaming profiel"],c:[1],h:"gMSA = veilige service accounts. Automatische wachtwoordrotatie, geen manueel wachtwoordbeheer nodig."},
+{type:"mc",q:"Wat is Windows Event Forwarding?",o:["Een type e-mailforwarding","Een mechanisme waarmee Windows events van meerdere computers gecollecteerd worden op één centrale event collector voor gecentraliseerde analyse","Een type DNS-forwarding","Een type DHCP-forwarding"],c:[1],h:"Event Forwarding = Windows equivalent van syslog forwarding. Centraliseer alle security events op één server."},
+{type:"mc",q:"Wat is een 'subscription' in Windows Event Forwarding?",o:["Een type e-mailabonnement","Een configuratie die definieert welke events van welke bronnen gefollecteerd worden op de collector-server","Een type taak","Een type GPO"],c:[1],h:"Subscription = filter en stuur. Definieer: welke computers, welke event-IDs, naar welke collector."},
+{type:"mc",q:"Wat is een 'storage spaces' in Windows Server?",o:["Een type virtueel geheugen","Een Windows Server-feature die meerdere fysieke schijven combineert tot één of meerdere virtuele schijven met RAID-functionaliteit","Een type back-up","Een type RAID-controller"],c:[1],h:"Storage Spaces = software-RAID op Windows. Combineer goedkope JBOD schijven tot een fault-tolerant volume."},
+{type:"mc",q:"Wat is 'ReFS' (Resilient File System) en wanneer gebruik je het?",o:["Een type back-up","Een Microsoft bestandssysteem geoptimaliseerd voor grote volumes en data-integriteit — bij voorkeur voor Hyper-V VHDs en back-up targets","Een type NTFS-variant","Een type Linux bestandssysteem"],c:[1],h:"ReFS = robuust voor grote volumes en virtualisatie. Integriteitschecks, snellere VHDX-operaties."},
+{type:"mc",q:"Wat is het verschil tussen NTFS en FAT32 als bestandssysteem?",o:["Ze zijn identiek","NTFS = journaling, bestandspermissies, grote bestanden (>4GB), versleuteling; FAT32 = eenvoudig, breed compatibel, max 4GB per bestand","FAT32 is veiliger","FAT32 ondersteunt grotere bestanden"],c:[1],h:"NTFS voor Windows Server altijd. FAT32 enkel voor USB-sticks die ook op niet-Windows toestellen werken."},
+{type:"mc",q:"Wat is een 'shared nothing cluster' in Windows Server?",o:["Een cluster zonder gedeelde opslag","Een type Hyper-V cluster waarbij elke node zijn eigen opslag heeft — Hyper-V Replica of CSV voor synchronisatie","Een type RAID-cluster","Een type DNS-cluster"],c:[1],h:"Shared nothing = geen shared storage vereist. Goedkoper dan traditionele SAN-clusters."},
+{type:"mc",q:"Wat is 'Storage Replica' in Windows Server?",o:["Een type deduplicatie","Een Windows Server-feature voor synchrone of asynchrone volume-replicatie tussen servers — voor disaster recovery","Een type back-up","Een type RAID"],c:[1],h:"Storage Replica = blokniveau-replicatie. Synchrone replica = zero RPO (maar prestatieimpact). Asynchroon = meer RPO."},
+{type:"mc",q:"Wat is het doel van 'System State backup' op Windows Server?",o:["Een back-up van gebruikersdata","Een back-up van kritieke OS-componenten (registry, boot files, COM+ registratie, AD database) voor systeemherstel","Een type image-back-up","Een type bestandsback-up"],c:[1],h:"System State = het hart van Windows. Herstel AD uit System State back-up na een corrupte database."},
+{type:"mc",q:"Wat is 'Authoritative Restore' bij Active Directory?",o:["Een normale AD-herstel","Een herstel waarbij de herstelde AD-data als authoritative gemarkeerd wordt zodat ze gerepliceerd worden naar andere DCs (niet overschreven)","Een type DC-promotie","Een type AD-back-up"],c:[1],h:"Authoritative restore = forceer de teruggedraaide data. Verwijderde OU? Authoritative restore brengt hem terug."},
+{type:"mc",q:"Wat is 'Tombstone lifetime' in Active Directory?",o:["De levensduur van een DC","De periode gedurende welke verwijderde AD-objecten bewaard worden als 'tombstones' zodat de verwijdering kan worden gerepliceerd","Een type FSMO-rol","Een type back-up periode"],c:[1],h:"Tombstone lifetime = standaard 180 dagen. Back-ups ouder dan dit zijn te oud voor AD-herstel. Plan back-ups hierop!"},
+{type:"mc",q:"Wat is AD Recycle Bin in Windows Server?",o:["Een type prullenbak voor bestanden","Een AD-feature die verwijderde objecten bewaart met al hun attributen, herstelbaar zonder downtime of back-uprestauratie","Een type back-up","Een type FSMO-rol"],c:[1],h:"AD Recycle Bin = herstel verwijderde users/OUs/computers onmiddellijk vanuit AD. Geen back-up nodig."},
+{type:"mc",q:"Wat is het doel van Windows Server 'iSCSI Target'?",o:["Een type DNS-target","Een Windows Server-rol die een iSCSI storage target biedt — serveert blokniveau-opslag via het IP-netwerk","Een type DHCP-target","Een type back-up target"],c:[1],h:"iSCSI Target = SAN over Ethernet. Goedkoop alternatief voor Fibre Channel SAN. Windows Server kan iSCSI bieden."},
+{type:"mc",q:"Wat is een Windows Server NLB (Network Load Balancing)?",o:["Een type netwerksegmentatie","Een ingebouwde load balancer die inkomend netwerk-verkeer verdeelt over meerdere servers voor beschikbaarheid en schaalbaarheid","Een type routing","Een type clustering"],c:[1],h:"NLB = IP-gebaseerde load balancing voor webservers, IIS, remote desktop. Eenvoudiger dan hardwarebalancers."},
+{type:"mc",q:"Wat is een 'Windows Server Core' voordeel voor beveiliging?",o:["Snellere patches","Kleiner aanvalsoppervlak door minder geïnstalleerde componenten, minder services en minder patches nodig","Betere GUI","Meer compatibiliteit"],c:[1],h:"Server Core = minimalistisch. Minder code = minder kwetsbaarheden. Microsoft adviseert het voor productie."},
+{type:"mc",q:"Wat is 'Windows Admin Center' (WAC)?",o:["Een type Active Directory-tool","Een moderne web-gebaseerde beheerconsole voor Windows Server, Hyper-V, clusters en Windows 10/11 beheer","Een type back-up tool","Een type DNS-tool"],c:[1],h:"WAC = de moderne opvolger van traditionele MMC-consoles. Beheer servers via browser zonder RDP."},
+{type:"mc",q:"Wat is het verschil tussen 'graceful shutdown' en 'hard poweroff' van een server?",o:["Ze zijn identiek","Graceful shutdown = OS sluit correct af, services stoppen netjes, data wordt geflushed; Hard poweroff = stroom weg, mogelijke datacorruptie","Hard poweroff is veiliger","Graceful shutdown is langzamer en gevaarlijker"],c:[1],h:"Graceful = correct afsluiten. Hard poweroff bij een crash = risico op corruptie van databases en logs."},
+{type:"mc",q:"Wat is een UPS (Uninterruptible Power Supply) schakelingsintegratie met Windows Server?",o:["Een type router","Via een UPS-beheersoftware kan Windows Server automatisch een graceful shutdown uitvoeren wanneer de batterij bijna leeg is","Een type back-up","Een type monitoring"],c:[1],h:"UPS + software = automatische graceful shutdown bij langdurige stroomuitval. Voorkomt datacorruptie."},
+{type:"mc",q:"Wat is een 'bare metal recovery' en wanneer is het nodig?",o:["Een back-up van gebruikersdata","Het volledig herstellen van een server op nieuwe of lege hardware vanuit een back-up — inclusief OS, applicaties en configuratie","Een type image back-up","Een type partitionele herstel"],c:[1],h:"Bare metal = herstel van nul. Hardware kapot? Nieuwe server + bare metal back-up = terug in productie."},
+{type:"mc",q:"Wat is 'Windows Deployment Services' (WDS)?",o:["Een type DNS-dienst","Een Windows Server-rol voor netwerk-gebaseerde OS-installatie — PXE boot voor massale deployment","Een type DHCP-dienst","Een type back-up dienst"],c:[1],h:"WDS + PXE = installeer Windows op 100 computers tegelijk via het netwerk zonder USB-sticks."},
+{type:"mc",q:"Wat is MDT (Microsoft Deployment Toolkit)?",o:["Een type monitoring tool","Een gratis Microsoft tool voor geautomatiseerde OS-deployment met takenreeksen, drivers en applicaties","Een type back-up tool","Een type DHCP-tool"],c:[1],h:"MDT = scripted deployment. Definieer eenmaal hoe een PC geconfigureerd moet worden, pas toe op honderden."},
+{type:"mc",q:"Wat is SCCM/Endpoint Manager en wat is de relatie met serverbeheer?",o:["Een type DNS-tool","Microsoft's enterprise-tool voor OS-deployment, patching, software-distributie en compliance-monitoring","Een type firewall","Een type back-up tool"],c:[1],h:"SCCM = de grote broer van WSUS. Niet enkel patches maar ook software, OS-deployment en inventaris."},
+{type:"mc",q:"Wat is een 'runbook' in IT-beheer?",o:["Een type monitoringdashboard","Een gedocumenteerde stap-voor-stap procedure voor het uitvoeren van specifieke taken — essentieel voor herhaalbare en foutvrije operaties","Een type back-up","Een type audit rapport"],c:[1],h:"Runbook = de handleiding voor operaties. Zo kan ook een junior de procedure correct uitvoeren."},
+{type:"mc",q:"Wat is 'Change Management' in IT-beheer?",o:["Het beheren van wisselgeld","Het gestructureerde proces voor het beoordelen, goedkeuren en implementeren van wijzigingen — minimaliseert het risico van verstoring","Een type back-up proces","Een type monitoring proces"],c:[1],h:"Change management = geen wijzigingen zonder goedkeuring. CAB (Change Advisory Board) beoordeelt grote wijzigingen."},
+{type:"mc",q:"Wat is een 'post-implementation review' na een serverwijziging?",o:["Een type audit","Een evaluatie na het doorvoeren van een wijziging om te controleren of alles correct werkt en lessen te trekken","Een type back-up","Een type monitoring"],c:[1],h:"PIR = evalueer wat je gedaan hebt. Werkt alles? Waren er onverwachte problemen? Wat leren we hieruit?"},
+{type:"mc",q:"Wat is het verschil tussen 'in-place upgrade' en 'migration' bij Windows Server?",o:["Ze zijn identiek","In-place upgrade = OS upgraden op dezelfde hardware; Migration = diensten verplaatsen naar nieuwe hardware/OS","Migration is altijd beter","In-place is altijd riskanter"],c:[1],h:"In-place = eenvoudiger maar risicovoller. Migration = meer werk maar schoner resultaat. Voor kritieke systemen: migreer."},
+{type:"mc",q:"Wat is 'Windows Server Licensing' per core?",o:["Een licentie per gebruiker","Microsoft licentieert Windows Server op basis van het aantal fysieke processor-cores — alle cores moeten gelicentieerd zijn","Een licentie per server","Een licentie per virtuele machine"],c:[1],h:"Per-core licensing = alle cores tellen. Minimaal 16 cores per processor. Virtualisatie heeft aparte licentieregels."},
+{type:"mc",q:"Wat is een 'CAL' (Client Access License) voor Windows Server?",o:["Een type certificaat","Een licentie die elke gebruiker of apparaat nodig heeft die toegang krijgt tot Windows Server-diensten","Een type back-up licentie","Een type monitoring licentie"],c:[1],h:"CAL = toegangslicentie. Naast de server-licentie heeft elke gebruiker/apparaat die verbindt een CAL nodig."},
+{type:"mc",q:"Wat is het doel van 'Windows Server Evaluation' versies?",o:["Gratis permanente versies","Tijdelijke (180 dagen) volledige versies voor evaluatie en testen, zonder productiegebruik","Een type student-licentie","Een type cloud-licentie"],c:[1],h:"Evaluation = test alles gratis voor 180 dagen. Daarna activeren met licentie of opnieuw installeren."},
+{type:"mc",q:"Wat is Azure Arc voor on-premises servers?",o:["Een type back-up","Een Microsoft cloud-dienst die Azure-beheerfunctionaliteit uitbreidt naar on-premises en multi-cloud servers — unified management","Een type DNS-dienst","Een type monitoring tool"],c:[1],h:"Azure Arc = beheer on-premises servers als waren ze Azure-resources. Unified policy, monitoring en update management."},
+{type:"mc",q:"Wat is het doel van 'Windows Server Message Blocks Signing'?",o:["Een type versleuteling","Een beveiligingsfunctie die SMB-verkeer digitaal ondertekent om man-in-the-middle aanvallen op bestandsoverdrachten te voorkomen","Een type authenticatie","Een type compressie"],c:[1],h:"SMB Signing = handtekening op elk SMB-pakket. Aanvaller kan verkeer niet aanpassen zonder detectie."},
+{type:"mc",q:"Wat is 'SMB 3.0 Encryption'?",o:["Een type compressie","Versleuteling van SMB-verkeer end-to-end — beschermt bestandsoverdrachten op het netwerk tegen afluistering","Een type authenticatie","Een type handtekening"],c:[1],h:"SMB Encryption = versleutel alle bestandsoverdrachten. Beschermt ook op vertrouwde interne netwerken."},
+{type:"mc",q:"Wat is 'Windows Server 2022' belangrijkste security verbetering?",o:["Snellere back-ups","Secured-core server met hardwaregebaseerde beveiligingsfeatures: Secure Boot, DRTM, HVCI voor kernelbeveiliging","Betere GUI","Meer VLAN-ondersteuning"],c:[1],h:"Secured-core = diepere hardwarebeveiliging. TPM 2.0, UEFI Secure Boot, Virtualization Based Security verplicht."},
+{type:"mc",q:"Wat is een 'patch Tuesday'?",o:["Een willekeurige patchdag","De tweede dinsdag van elke maand waarop Microsoft beveiligingsupdates uitbrengt — standaard patch-cyclus","De eerste dinsdag","Een type automatisch patch-systeem"],c:[1],h:"Patch Tuesday = Microsofts maandelijkse beveiligingsupdates. Plan je WSUS-goedkeuring en uitrol hierop."},
+{type:"mc",q:"Wat is een 'zero-day patch'?",o:["Een patch uitgebracht op nuldagen","Een noodpatch uitgebracht buiten de normale patch-cyclus voor kritieke kwetsbaarheden die actief geëxploiteerd worden","Een type WSUS-update","Een type firmware-update"],c:[1],h:"Zero-day patch = spoedreparatie. Wacht niet op patch Tuesday — patch onmiddellijk bij actieve exploitatie."},
+{type:"mc",q:"Wat is het doel van 'Windows Server Monitoring'?",o:["Een type back-up","Het continu bewaken van server-gezondheid (CPU, geheugen, schijf, events) voor proactieve probleemdetectie","Een type beveiliging","Een type deployment"],c:[1],h:"Server monitoring = vroeg weten. CPU-pieken, schijf bijna vol, service gestopt — proactief actie ondernemen."},
+{type:"mc",q:"Wat is Performance Monitor op Windows Server?",o:["Een type taakbeheerder","Een tool voor het vastleggen en analyseren van performance-metrics over tijd via performance counters","Een type event viewer","Een type resource monitor"],c:[1],h:"Performance Monitor (perfmon) = tijdreeksanalyse. Leg CPU, geheugen, disk en netwerk vast over langere periode."},
+{type:"mc",q:"Wat is Resource Monitor op Windows Server?",o:["Een type performance monitor","Een real-time tool die CPU, geheugen, schijf en netwerk per proces toont — dieper dan taakbeheer","Een type event viewer","Een type process monitor"],c:[1],h:"Resource Monitor = detail per proces. Welk proces gebruikt al die disk-IO? Resource Monitor toont het."},
+{type:"mc",q:"Wat is het 'Windows Assessment and Deployment Kit' (ADK)?",o:["Een type monitoring toolkit","Een toolkit met tools voor het aanpassen, evalueren en deployen van Windows — bevat WinPE, DISM, Windows SIM","Een type back-up toolkit","Een type beveiligingstoolkit"],c:[1],h:"ADK = de gereedschapskist voor Windows deployment. WinPE voor boot-media, DISM voor image-beheer."},
+{type:"mc",q:"Wat is DISM (Deployment Image Servicing and Management)?",o:["Een type DNS-tool","Een command-line tool voor het beheren van Windows images — offline patches toepassen, drivers toevoegen, features in/uitschakelen","Een type back-up tool","Een type monitoring tool"],c:[1],h:"DISM = bewerk een Windows-image zonder het te starten. Patch WinPE, voeg drivers toe aan een image."},
+{type:"mc",q:"Wat is 'WinPE' (Windows Preinstallation Environment)?",o:["Een type bare-metal OS","Een minimale Windows-omgeving die booted van USB/PXE voor troubleshooting, deployment en herstel","Een type server OS","Een type back-up omgeving"],c:[1],h:"WinPE = boot-omgeving. Start van USB, herstel een systeem, deploy een image — zonder een volledig OS nodig."},
+{type:"mc",q:"Wat is het doel van 'Sysprep' bij Windows Server deployment?",o:["Een type performance-tool","Een tool die een Windows-installatie generaliseert voor klonen — verwijdert machine-specifieke informatie voor deployment","Een type back-up tool","Een type monitoring tool"],c:[1],h:"Sysprep = maak klaar voor klonen. Verwijdert SID, computernaam, activering zodat elke clone uniek wordt."},
+{type:"mc",q:"Wat is een 'golden image' in serverdeployment?",o:["Een type back-up","Een geoptimaliseerde, vooraf geconfigureerde master OS-image die gebruikt wordt als basis voor alle nieuwe server-deployments","Een type performance image","Een type beveiligingsimage"],c:[1],h:"Golden image = de perfecte blauwdruk. Gepatcht, geconfigureerd, klaar. Kloon het voor nieuwe servers."},
+{type:"mc",q:"Wat is 'Desired State Configuration' (DSC) in PowerShell?",o:["Een type monitoring","Een PowerShell-framework voor het declaratief beschrijven en afdwingen van de gewenste configuratietoestand van servers","Een type back-up","Een type deployment tool"],c:[1],h:"DSC = zeg hoe de server eruit moet zien, PowerShell zorgt dat het zo is en blijft. Infrastructure as Code."},
+{type:"mc",q:"Wat is 'Infrastructure as Code' (IaC) in servercontext?",o:["Een type programmeeromgeving","Het beheren van infrastructuur via code (scripts, templates) zodat omgevingen reproduceerbaar en versie-beheerd zijn","Een type monitoring","Een type back-up"],c:[1],h:"IaC = geen handmatige serverconfiguratie. Code beschrijft de infrastructuur → reproduceerbaar en auditeerbaar."},
+{type:"mc",q:"Wat is Ansible in de context van Windows Server beheer?",o:["Een type back-up","Een open-source automatiseringstool die Windows servers kan configureren via WinRM/SSH zonder agent","Een type monitoring","Een type deployment tool"],c:[1],h:"Ansible = agentloze automatisering. Gebruik playbooks om Windows Server te configureren op schaal."},
+{type:"mc",q:"Wat is Terraform in servercontext?",o:["Een type besturingssysteem","Een IaC-tool voor het provisioneren van cloud- en on-premises infrastructuur via declaratieve configuratiebestanden","Een type monitoring","Een type back-up"],c:[1],h:"Terraform = provisioneer servers via code. Hetzelfde bestand voor AWS, Azure en VMware — multi-cloud IaC."},
+{type:"mc",q:"Wat is een 'configuration drift' probleem?",o:["Een type netwerkverschuiving","De geleidelijke afwijking van een server van zijn gewenste configuratie door manuele wijzigingen, patches of incidenten","Een type prestatieverslechtering","Een type beveiligingsprobleem"],c:[1],h:"Configuration drift = server A en B waren identiek maar zijn dat niet meer. DSC/Ansible/Chef detecteren en corrigeren dit."},
+{type:"mc",q:"Wat is 'immutable infrastructure'?",o:["Een type legacy-infrastructuur","Een aanpak waarbij servers nooit gewijzigd worden na deployment — bij wijziging wordt een nieuwe server gecreëerd en de oude vervangen","Een type back-up strategie","Een type clusterconfiguratie"],c:[1],h:"Immutable = geen configuratiewijzigingen achteraf. Probleem? Gooi weg, deploy een nieuwe. Elimineert drift."},
+{type:"mc",q:"Wat is een 'Heartbeat' monitoring in de context van servers?",o:["Een type prestatiemeting","Periodieke ping of check om te bevestigen dat een server nog leeft — als geen heartbeat ontvangen, alarm slaan","Een type back-up check","Een type security scan"],c:[1],h:"Heartbeat = ik leef nog. Geen heartbeat = server dood of netwerk weg. Eenvoudigste vorm van monitoring."},
+{type:"mc",q:"Wat is 'Event ID 4625' in Windows Security log?",o:["Succesvolle aanmelding","Mislukte aanmelding — nuttig voor detectie van brute force aanvallen","Account aanmaak","Wachtwoordwijziging"],c:[1],h:"Event 4625 = failed logon. Veel 4625s voor hetzelfde account = brute force aanval. Monitor dit!"},
+{type:"mc",q:"Wat is 'Event ID 4624' in Windows Security log?",o:["Mislukte aanmelding","Succesvolle aanmelding — log van wie wanneer ingelogd heeft","Account vergrendeld","Service gestart"],c:[1],h:"Event 4624 = successful logon. Combineer met 4625 voor login-analyse. Basis voor security monitoring."},
+{type:"mc",q:"Wat is 'kerberos' authenticatie in Windows?",o:["Een type wachtwoord-hash","Het standaard authenticatieprotocol in Active Directory-omgevingen — gebruikt tickets voor single sign-on","Een type LDAP-protocol","Een type firewall"],c:[1],h:"Kerberos = ticket-based authenticatie. KDC geeft tickets uit → eenmalig inloggen geeft toegang tot alle services."},
+{type:"mc",q:"Wat is LDAP en waarvoor wordt het gebruikt in Windows omgevingen?",o:["Een type routeringsprotocol","Lightweight Directory Access Protocol — het protocol voor het bevragen en wijzigen van directory-informatie zoals Active Directory","Een type DNS-protocol","Een type DHCP-protocol"],c:[1],h:"LDAP = communiceer met AD. Zoek gebruikers, controleer groepen, authenticeer applicaties via LDAP(S)."},
+{type:"mc",q:"Wat is een 'Service Principal Name' (SPN) in Kerberos?",o:["Een type gebruikersnaam","Een unieke identificator voor een service-instantie in een Kerberos-omgeving — clients gebruiken het om de juiste service te vinden","Een type computer account","Een type groepsbeleid"],c:[1],h:"SPN = Kerberos-adres voor een service. HTTP/server.domein.be voor IIS, MSSQLSvc/sql.domein.be voor SQL Server."},
+{type:"mc",q:"Wat is 'Privilege Access Workstation' (PAW)?",o:["Een krachtige werkstation","Een geharde, speciaal geconfigureerde werkstation gebruikt uitsluitend voor beheertaken — gescheiden van dagelijks gebruik","Een type server","Een type virtual machine"],c:[1],h:"PAW = dedicated admin-werkstation. Geen internet, geen e-mail, enkel beheertaken. Beschermt admin-credentials."},
+{type:"mc",q:"Wat is 'Just Enough Administration' (JEA) in PowerShell?",o:["Een type monitoring","Een PowerShell-feature die beheertaken beperkt tot specifieke commando's voor specifieke gebruikers — least privilege voor beheerders","Een type back-up","Een type deployment"],c:[1],h:"JEA = least privilege voor admins. Helpdesk kan wachtwoord resetten maar niet alles in AD."},
+{type:"mc",q:"Wat is 'tiered administration model' in Active Directory beveiliging?",o:["Een type groepsbeheer","Een beveiligingsmodel met drie lagen: Tier 0 (domein admins), Tier 1 (server admins), Tier 2 (werkstationbeheer) — accounts worden niet gecrossed","Een type OU-structuur","Een type GPO-model"],c:[1],h:"Tiered model = isoleer admin-accounts per laag. Domein admin-account nooit op werkstations gebruiken."},
+{type:"mc",q:"Wat is een 'Server baseline hardening' voor Windows Server?",o:["Een type back-up","Het verwijderen van onnodige rollen, services en functies, instellen van beveiligde configuraties en toepassen van security baselines voor een veilige standaard","Een type monitoring","Een type deployment"],c:[1],h:"Hardening = maak de server zo klein en veilig mogelijk. CIS Benchmarks of Microsoft Security Baselines als referentie."},
+{type:"mc",q:"Wat is 'AppLocker' in Windows Server?",o:["Een type wachtwoordbeheerder","Een Windows-feature die bepaalt welke applicaties mogen worden uitgevoerd op basis van regels (pad, uitgever, hash)","Een type firewall","Een type antivirus"],c:[1],h:"AppLocker = whitelist van toegestane applicaties. Voorkomt dat ongeautoriseerde software (incl. malware) draait."},
+{type:"mc",q:"Wat is Windows Defender Credential Guard?",o:["Een type wachtwoordkluis","Een Windows 10/Server 2016+ feature die credential-hashes isoleert in een virtuele container zodat Pass-the-Hash aanvallen worden voorkomen","Een type antivirus","Een type firewall"],c:[1],h:"Credential Guard = VBS-gebaseerde isolatie van LSASS. Geen toegang tot credential-hashes, ook niet voor admins."},
+{type:"mc",q:"Wat is Pass-the-Hash (PtH)?",o:["Een type wachtwoordbrute-force","Een aanval waarbij een aanvaller de wachtwoordhash van een gebruiker steelt en direct gebruikt voor authenticatie zonder het echte wachtwoord te kennen","Een type phishing","Een type privilege escalation"],c:[1],h:"PtH = gebruik de hash als authenticatie. Credential Guard maakt dit onmogelijk door hashes te isoleren."},
+{type:"mc",q:"Wat is 'Mimikatz' en waarvoor wordt het gebruikt?",o:["Een type monitoring tool","Een post-exploitation tool die wachtwoorden en Kerberos-tickets uit het Windows-geheugen kan extraheren","Een type deployment tool","Een type back-up tool"],c:[1],h:"Mimikatz = credential dumping tool. Aanvallers gebruiken het na compromittering. Defender credential guard beschermt."},
+{type:"mc",q:"Wat is een 'Golden Ticket attack' in Kerberos?",o:["Een type phishing-aanval","Een aanval waarbij de aanvaller het wachtwoord van het KRBTGT-account steelt om zichzelf valse Kerberos-tickets te kunnen maken met willekeurige privileges","Een type DDoS","Een type DNS-aanval"],c:[1],h:"Golden Ticket = onbeperkte toegang. Met KRBTGT-hash maak je tickets voor elke gebruiker, elke privilege. Reset KRBTGT tweemaal na compromise."},
+{type:"mc",q:"Wat is 'Windows Firewall with Advanced Security' (WFAS)?",o:["Een type antivirus","De ingebouwde Windows-firewall met ondersteuning voor inbound/outbound regels, IPsec, authenticatie en verbindingsbeveiligingsregels","Een type IDS","Een type proxy"],c:[1],h:"WFAS = krachtige ingebouwde firewall. Configureer via GPO voor alle domein-computers. Niet enkel on/off."},
+{type:"mc",q:"Wat is IPsec en hoe wordt het gebruikt op Windows Server?",o:["Een type VPN-protocol","Een set protocollen voor beveiligde IP-communicatie via authenticatie en encryptie — gebruikt voor server-isolatie en beveiligde communicatie","Een type firewall","Een type DNS-beveiliging"],c:[1],h:"IPsec op Windows = versleutel en authenticeer IP-verkeer. Verbindingsbeveiligingsregels in WFAS configureren IPsec."},
+{type:"mc",q:"Wat is 'Network Policy Server' (NPS) op Windows Server?",o:["Een type DNS-server","Een RADIUS-server rol op Windows Server voor het authenticeren van VPN-clients, 802.1X en Wi-Fi-gebruikers","Een type DHCP-server","Een type back-up server"],c:[1],h:"NPS = Windows RADIUS server. Authenticeer VPN- en 802.1X-verbindingen tegen Active Directory."},
+{type:"mc",q:"Wat is een Windows Server Container?",o:["Een type beveiligde zone","Een lichtgewicht, geïsoleerde omgeving voor het uitvoeren van applicaties met gedeelde OS-kernel — sneller dan VM's maar minder geïsoleerd","Een type virtuele machine","Een type VLAN"],c:[1],h:"Windows Containers = Docker-compatible containers op Windows. Gedeelde kernel = efficiënter dan VMs."},
+{type:"mc",q:"Wat is het verschil tussen een Windows Container en een Hyper-V Container?",o:["Ze zijn identiek","Windows Container = gedeelde kernel; Hyper-V Container = eigen micro-VM per container voor sterkere isolatie","Hyper-V Container is minder veilig","Windows Container is altijd trager"],c:[1],h:"Hyper-V Container = extra isolatie. Elke container heeft een eigen lichtgewicht Hyper-V VM. Veiliger, iets meer overhead."},
+{type:"mc",q:"Wat is 'IIS' op Windows Server?",o:["Een type DNS-server","Internet Information Services — de ingebouwde webserver van Windows Server voor het hosten van websites en web-API's","Een type DHCP-server","Een type monitoring service"],c:[1],h:"IIS = Windows webserver. ASP.NET applicaties, statische websites, WebDAV, FTP — allemaal via IIS."},
+{type:"mc",q:"Wat is een 'Application Pool' in IIS?",o:["Een type database-pool","Een geïsoleerd werkproces (w3wp.exe) dat een of meer websites/applicaties host — isolatie voorkomt dat een crash andere apps neersloopt","Een type back-up","Een type load balancer"],c:[1],h:"App Pool = isolatie in IIS. Als één app crasht, valt alleen die app — niet de hele webserver."},
+{type:"mc",q:"Wat is 'Web Deploy' (MSDeploy) in IIS?",o:["Een type update-service","Een tool voor het deployen, migreren en synchroniseren van IIS-websites en applicaties","Een type monitoring","Een type back-up"],c:[1],h:"Web Deploy = automated website deployment. Publiceer vanuit Visual Studio of CI/CD direct naar IIS."},
+{type:"mc",q:"Wat is een 'Server-Sent Events' probleem in het kader van Windows Server security?",o:["Een type SSE-kwetsbaarheid","Geen direct Windows Server concept — dit is een web-technologie. Afleidervraag.","Een type IIS-kwetsbaarheid","Een type SSRF-aanval"],c:[1],h:"Server-Sent Events is een web-technologie, geen specifiek Windows Server beveiligingsconcept."},
+{type:"mc",q:"Wat is 'Remote Desktop Services' (RDS) op Windows Server?",o:["Een type VPN-dienst","Een Windows Server-rol voor het centraal aanbieden van desktops, applicaties en sessies via het netwerk","Een type DNS-dienst","Een type back-up dienst"],c:[1],h:"RDS = terminal server. Medewerkers verbinden via RDP naar een centrale server die de applicaties en desktops host."},
+{type:"mc",q:"Wat is 'Remote Desktop Gateway' (RD Gateway)?",o:["Een type router","Een Windows Server-rol die RDP-verbindingen via HTTPS tunnelt voor veilige toegang van buiten het netwerk","Een type VPN","Een type DNS-dienst"],c:[1],h:"RD Gateway = veilige RDP via HTTPS. Geen directe TCP 3389 blootstelling — alles via poort 443 (HTTPS tunnel)."},
+{type:"mc",q:"Wat is een 'print server' rol op Windows Server?",o:["Een type file server","Een Windows Server-rol die netwerk-printers centraliseert — één printserver beheert alle printers voor de organisatie","Een type DNS-server","Een type DHCP-server"],c:[1],h:"Print server = centraal printerbeheer. Drivers eenmalig op server, automatisch uitgerold via GPO naar clients."},
+{type:"mc",q:"Wat is een 'File Server Resource Manager' (FSRM)?",o:["Een type monitoring tool","Een Windows Server feature voor het beheren van bestandsopslag: quota, file screening, storage reports","Een type back-up tool","Een type DNS-tool"],c:[1],h:"FSRM = storage governance. Blokkeer .exe bestanden op file shares, stel opslagquota per gebruiker in."},
+{type:"mc",q:"Wat is 'BitLocker' op Windows Server?",o:["Een type wachtwoordbeheerder","Een Windows encryptietechnologie voor het versleutelen van volledige schijven — beschermt data bij fysieke diefstal van hardware","Een type firewall","Een type anti-malware"],c:[1],h:"BitLocker = volledige schijfversleuteling. Server gestolen? Zonder de decryptiesleutel zijn de data onleesbaar."},
+{type:"mc",q:"Wat is 'EFS' (Encrypting File System)?",o:["Een type firewall","Windows bestandssysteem-encryptie op bestandsniveau — bestanden zijn versleuteld, enkel de eigenaar en geautoriseerde gebruikers kunnen ze lezen","Een type back-up","Een type compressie"],c:[1],h:"EFS = per-bestand encryptie in NTFS. Verschil met BitLocker: EFS = per bestand, BitLocker = hele schijf."},
+{type:"mc",q:"Wat is 'Windows Server 2022 Secured-core'?",o:["Een type back-up feature","Een configuratie die hardware, firmware en OS beveiligingsfuncties combineert: Secure Boot, TPM 2.0, DRTM voor maximale bescherming","Een type prestatiefunctie","Een type replicatiefunctie"],c:[1],h:"Secured-core = diepste verdediging. Hardware-gebaseerde bescherming tegen firmware-aanvallen en rootkits."},
+{type:"mc",q:"Wat is een 'TPM' (Trusted Platform Module) en waarom is het relevant voor servers?",o:["Een type processor","Een hardware chip die cryptografische sleutels veilig opslaat — gebruikt door BitLocker, Secure Boot en Credential Guard","Een type geheugen","Een type opslagmedium"],c:[1],h:"TPM = hardware sleutelkluis. BitLocker slaat zijn sleutel in de TPM op — verwijder de harde schijf → data onleesbaar."},
+{type:"mc",q:"Wat is 'Secure Boot' op Windows Server?",o:["Een type snelle opstart","Een UEFI-beveiligingsfunctie die verifieert dat de bootloader digitaal ondertekend is door een vertrouwde partij — blokkeert bootkits","Een type firewall","Een type versleuteling"],c:[1],h:"Secure Boot = vertrouw enkel ondertekende bootloaders. Bootkits manipuleren het opstartproces — Secure Boot stopt dit."},
+{type:"mc",q:"Wat is een 'bootkit'?",o:["Een type malware-toolkit","Malware die zich installeert in de bootloader/MBR zodat het laadt voor het OS en moeilijk detecteerbaar is","Een type rootkit","Een type ransomware"],c:[1],h:"Bootkit = extra low-level. Start voor Windows, dus het kan Windows-beveiligingssoftware omzeilen."},
+{type:"mc",q:"Wat is het verschil tussen een 'warm reboot' en een 'cold boot' van een server?",o:["Ze zijn identiek","Warm reboot = herstart via software (OS sluit af, herstart); Cold boot = stroom uit en terug aan — hardware volledig reset","Cold boot is sneller","Warm reboot is gevaarlijker"],c:[1],h:"Warm reboot = schoon via OS. Cold boot = hardware-reset. Voor sommige hardware-problemen is cold boot nodig."},
+{type:"mc",q:"Wat is 'iDRAC' (Integrated Dell Remote Access Controller)?",o:["Een type monitoring software","Een out-of-band beheerinterface op Dell servers die toegang biedt tot de server ook als het OS offline is","Een type RAID-controller","Een type back-up systeem"],c:[1],h:"iDRAC = Dell's BMC. Vergelijkbaar met HP iLO. Virtuele console, power management, hardware monitoring zonder OS."},
+{type:"mc",q:"Wat is 'HP iLO' (Integrated Lights-Out)?",o:["Een type monitoring software","HP's out-of-band beheerinterface voor servers die toegang biedt tot de server onafhankelijk van het OS","Een type RAID-controller","Een type beveiligingschip"],c:[1],h:"iLO = de 'noodlijn' voor HP servers. Server gecrasht? iLO geeft virtuele console-toegang voor probleemoplossing."},
+{type:"mc",q:"Wat is een 'SAS' (Serial Attached SCSI) schijf vs een 'SATA' schijf voor servers?",o:["Ze zijn identiek","SAS = hogere betrouwbaarheid, hogere RPM, dual-port, voor enterprise servers; SATA = goedkoper, lagere RPM, voor minder kritieke opslag","SATA is sneller","SAS is goedkoper"],c:[1],h:"SAS voor productie-servers: betrouwbaarder, sneller, dual-port voor redundantie. SATA voor back-up/archief."},
+{type:"mc",q:"Wat is een 'NVMe' schijf en wat maakt het geschikt voor servers?",o:["Een type netwerk-schijf","Non-Volatile Memory Express — ultra-snelle SSD-interface direct op PCIe, veel sneller dan SATA SSD","Een type HDD","Een type SAS-schijf"],c:[1],h:"NVMe = PCIe-direct SSD. 7GB/s+ lezen vs 600MB/s SATA. Voor databases en hot-tier opslag in servers."},
+{type:"mc",q:"Wat is een 'RAID controller' met batterij-back-up?",o:["Een type back-up systeem","Een hardware RAID-controller met een ingebouwde batterij die de write cache beschermt bij stroomuitval — voorkomt datacorruptie","Een type UPS","Een type stroombeveiliging"],c:[1],h:"RAID controller met BBU = write-cache is veilig. Zonder BBU: write-cache uitschakelen voor integriteit."},
+{type:"mc",q:"Wat is een 'hot spare' schijf in een RAID-array?",o:["Een extra back-upschijf","Een extra schijf in de array die automatisch de rebuild start als een andere schijf uitvalt — minimale tussenkomst nodig","Een type extra schijf voor opslag","Een type SSD-cache"],c:[1],h:"Hot spare = klaar-voor-gebruik reserve. Schijf failure → hot spare begint automatisch rebuild. Minder menselijke tussenkomst."},
+{type:"mc",q:"Wat is 'RAID 10' (RAID 1+0)?",o:["Een combinatie van RAID 1 en 0","RAID dat striping (RAID 0) combineert met mirroring (RAID 1) — hoge snelheid EN fouttolerantie maar vereist minimaal 4 schijven en 50% opslagefficiëntie","Een type RAID 5 met spiegel","Een type software RAID"],c:[1],h:"RAID 10 = snel + betrouwbaar. Stripe van mirrors. Kan meerdere schijffouten overleven als niet uit dezelfde mirror."},
+{type:"mc",q:"Wat is 'RAID 6' en wanneer gebruik je het boven RAID 5?",o:["RAID 5 met extra schijf","RAID met twee pariteitsblokken — kan twee gelijktijdige schijffouten overleven. Gebruik bij grote arrays waar rebuild-tijd lang duurt.","Een type RAID 10","RAID 5 met versleuteling"],c:[1],h:"RAID 6 = twee fouten tolereren. Bij grote (4TB+) schijven duurt RAID 5 rebuild zo lang dat een tweede failure reëel is."},
+{type:"mc",q:"Wat is 'VEEAM' in de context van Windows Server back-up?",o:["Een type antivirus","Een populaire back-up en replicatie-software specifiek ontworpen voor virtuele omgevingen (Hyper-V, VMware)","Een type monitoring tool","Een type deployment tool"],c:[1],h:"Veeam = enterprise back-up voor virtuele machines. Agentloze VM-back-up, instant recovery, tape support."},
+{type:"mc",q:"Wat is 'instant VM recovery' in Veeam/moderne back-up?",o:["Onmiddellijk een nieuwe VM maken","Het starten van een VM rechtstreeks vanuit de back-up storage zonder volledige restore — server is binnen minuten online","Een type live migratie","Een type replicatie"],c:[1],h:"Instant recovery = draai de back-up zelf als VM. Productie binnen 2 minuten online. Migrate daarna naar definitieve opslag."},
+{type:"mc",q:"Wat is 'Changed Block Tracking' (CBT) bij VM back-ups?",o:["Een type monitoring","Een hypervisor-feature die bijhoudt welke schijfblokken gewijzigd zijn — maakt incrementele VM-back-ups veel sneller","Een type replicatie","Een type snapshot-technologie"],c:[1],h:"CBT = track wijzigingen. Incrementele back-up weet exact welke blokken veranderd zijn. Geen volledige scan nodig."},
+{type:"mc",q:"Wat is een 'application-consistent backup'?",o:["Een type file-level back-up","Een back-up waarbij applicaties (bijv. SQL Server, Exchange) in een consistente staat worden gebracht (bijv. via VSS) voor de back-up","Een type image-back-up","Een type RAID-back-up"],c:[1],h:"App-consistent = database is 'schoon'. VSS writer stopt writes even, flusht buffers. Back-up is bruikbaar zonder transactieherstel."},
+];
+
+
+// ── CONFIG ──────────────────────────────────────────
+const cfg = {
+  count: sessionStorage.getItem('cfg-count') || '50',
+  order: sessionStorage.getItem('cfg-order') || 'shuffle',
+  types: sessionStorage.getItem('cfg-types') || 'all',
+};
+
+// ── INIT ────────────────────────────────────────────
+const POOL = window.QUESTIONS_serverbeheer || [];
+let questions = [...POOL];
+if (cfg.types !== 'all') questions = questions.filter(q => q.type === cfg.types);
+if (cfg.order === 'shuffle') questions = questions.sort(() => Math.random() - 0.5);
+if (cfg.count !== 'all') questions = questions.slice(0, parseInt(cfg.count));
+
+let idx = 0, correct = 0, wrong = 0, sel = new Set();
+
+function updateStats() {
+  const done = idx, total = questions.length, left = total - done;
+  const pct = done > 0 ? Math.round(correct / done * 100) : null;
+  document.getElementById('sv-score').textContent = correct;
+  document.getElementById('sv-wrong').textContent = wrong;
+  document.getElementById('sv-left').textContent = left;
+  document.getElementById('sv-pct').textContent = pct !== null ? pct + '%' : '—';
+  document.getElementById('prog').style.width = (done / total * 100) + '%';
+  document.getElementById('prog-txt').textContent = `Vraag ${Math.min(idx+1,total)} / ${total}`;
+}
+
+function renderQ() {
+  sel = new Set();
+  const q = questions[idx];
+  const letters = ['A','B','C','D','E','F'];
+
+  let body = '';
+  if (q.type === 'open') {
+    body = `<textarea class="open-inp" id="oa" rows="2" placeholder="Typ je antwoord hier…" oninput="onOI()"></textarea>`;
+  } else {
+    body = `<div class="opts">${q.o.map((o,i) => `<div class="opt" id="o${i}" onclick="tog(${i})"><div class="opt-box" id="b${i}"></div><span class="opt-letter">${letters[i]}</span><span class="opt-text">${o}</span></div>`).join('')}</div>`;
+  }
+
+  const tb = q.type === 'multi' ? `<span class="q-tbadge tb-multi">◈ Meerdere antwoorden</span>`
+           : q.type === 'open'  ? `<span class="q-tbadge tb-open">✏ Open vraag</span>` : '';
+
+  document.getElementById('q-container').innerHTML = `
+    <div class="q-card">
+      <div class="q-meta">
+        <span class="q-num">V${idx+1}</span>
+        <span class="q-sub">${q.t}</span>
+        ${tb}
+      </div>
+      <div class="q-text">${q.q}</div>
+      ${body}
+      <button class="hint-btn" id="hint-btn" onclick="toggleHint()">💡 Hint</button>
+      <div class="hint-box" id="hint-box">${q.h}</div>
+      <div class="feedback" id="fb"></div>
+    </div>`;
+
+  const bc = document.getElementById('btn-check');
+  bc.disabled = true;
+  bc.classList.remove('hidden');
+  document.getElementById('btn-next').classList.add('hidden');
+  document.getElementById('btn-skip').classList.remove('hidden');
+
+  if (q.type === 'open') {
+    document.getElementById('oa').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!bc.disabled) check(); }
+    });
+  }
+}
+
+function onOI() {
+  document.getElementById('btn-check').disabled = !document.getElementById('oa').value.trim();
+}
+
+function toggleHint() {
+  const hb = document.getElementById('hint-box');
+  hb.classList.toggle('show');
+  document.getElementById('hint-btn').textContent = hb.classList.contains('show') ? '💡 Hint verbergen' : '💡 Hint';
+}
+
+function tog(i) {
+  const q = questions[idx];
+  if (document.getElementById('o'+i)?.classList.contains('locked')) return;
+  if (q.type === 'mc') {
+    sel.forEach(s => { document.getElementById('o'+s)?.classList.remove('sel'); const b=document.getElementById('b'+s); if(b) b.innerHTML=''; });
+    sel.clear();
+  }
+  if (sel.has(i)) {
+    sel.delete(i);
+    document.getElementById('o'+i).classList.remove('sel');
+    document.getElementById('b'+i).innerHTML = '';
+  } else {
+    sel.add(i);
+    document.getElementById('o'+i).classList.add('sel');
+    document.getElementById('b'+i).innerHTML = '✓';
+  }
+  document.getElementById('btn-check').disabled = sel.size === 0;
+}
+
+function check() {
+  const q = questions[idx];
+  let ok = false;
+
+  if (q.type === 'open') {
+    const raw = document.getElementById('oa').value.trim().toLowerCase();
+    const acc = (q.ans||[]).map(a=>a.toLowerCase());
+    ok = acc.some(a => raw===a || raw.includes(a) || a.includes(raw));
+    const ta = document.getElementById('oa');
+    ta.classList.add(ok?'ok':'bad');
+    ta.disabled = true;
+  } else {
+    const s=[...sel], cor=q.c;
+    q.o.forEach((_,i)=>document.getElementById('o'+i)?.classList.add('locked'));
+    q.o.forEach((_,i)=>{
+      const el=document.getElementById('o'+i),bx=document.getElementById('b'+i);
+      if(!el) return;
+      el.classList.remove('sel');
+      if(s.includes(i)&&cor.includes(i)){el.classList.add('ok');if(bx)bx.innerHTML='✓';}
+      else if(s.includes(i)&&!cor.includes(i)){el.classList.add('bad');if(bx)bx.innerHTML='✗';}
+      else if(!s.includes(i)&&cor.includes(i)){el.classList.add('missed');if(bx)bx.innerHTML='!';}
+    });
+    ok = cor.every(c=>s.includes(c))&&s.every(sv=>cor.includes(sv));
+  }
+
+  if(ok) correct++; else wrong++;
+  updateStats();
+
+  const fb=document.getElementById('fb');
+  fb.className='feedback show '+(ok?'fb-ok':'fb-bad');
+  fb.innerHTML=(ok?'✅ <strong>Correct!</strong> ':'❌ <strong>Fout.</strong> ')+q.f;
+
+  document.getElementById('btn-check').classList.add('hidden');
+  document.getElementById('btn-skip').classList.add('hidden');
+  const bn=document.getElementById('btn-next');
+  bn.classList.remove('hidden');
+  bn.textContent = idx>=questions.length-1 ? 'Resultaten →' : 'Volgende →';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function skipQ() { wrong++; updateStats(); advance(); }
+function nextQ() { advance(); }
+function advance() {
+  idx++;
+  if(idx>=questions.length){showScore();return;}
+  renderQ();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function showScore() {
+  const total=questions.length, pct=Math.round(correct/total*100);
+  const msg = pct>=85?'🏆 Uitstekend! Je beheerst de leerstof.':pct>=70?'👍 Goed gedaan! Nog wat herhaling.':pct>=55?'📚 Voldoende — extra studie aangeraden.':'💡 Herhaal de cursus en probeer opnieuw.';
+  document.getElementById('quiz-screen').style.display='none';
+  const sc=document.getElementById('score-screen');
+  sc.style.display='block';
+  sc.innerHTML=`
+    <div class="sc-badge">🖥️ Serverbeheer S2</div>
+    <div class="sc-pct">${pct}%</div>
+    <div class="sc-msg">${msg}</div>
+    <div class="sc-grid">
+      <div class="sc-item"><span class="sc-num" style="color:var(--correct)">${correct}</span><span class="sc-lbl">Correct</span></div>
+      <div class="sc-item"><span class="sc-num" style="color:var(--wrong)">${wrong}</span><span class="sc-lbl">Fout / Over</span></div>
+      <div class="sc-item"><span class="sc-num" style="color:var(--muted2)">${total}</span><span class="sc-lbl">Totaal</span></div>
+    </div>
+    <div class="sc-btns">
+      <a class="btn-home" href="index.html">← Andere module</a>
+      <button class="btn-retry" onclick="location.reload()">↺ Opnieuw</button>
+    </div>`;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// Start
+updateStats();
+renderQ();
+</script>
+</body>
+</html>

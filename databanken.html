@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🗄️ Databanken Intro — AP Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07080b;--panel:#0d0f14;--panel2:#141720;
+  --border:#1a1f2e;--border2:#242b3d;
+  --text:#dde3f0;--muted:#4a5568;--muted2:#6b7280;
+  --c:#a855f7;--correct:#22c55e;--wrong:#ef4444;--amber:#ffb800;--purple:#a855f7;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(0,212,255,.05),transparent);pointer-events:none;z-index:0}
+.wrap{max-width:860px;margin:0 auto;padding:28px 20px 80px;position:relative;z-index:1}
+
+/* topbar */
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:28px;flex-wrap:wrap}
+.back{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted2);background:transparent;border:1px solid var(--border2);padding:7px 14px;border-radius:4px;cursor:pointer;text-decoration:none;transition:all .15s;display:inline-block}
+.back:hover{border-color:var(--muted);color:var(--text)}
+.topic-pill{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--c);border:1px solid;border-color:color-mix(in srgb,var(--c) 40%,transparent);background:color-mix(in srgb,var(--c) 8%,transparent);padding:5px 14px;border-radius:3px;margin-left:auto}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--border);border-radius:7px;overflow:hidden;background:var(--panel);margin-bottom:16px}
+.stat{text-align:center;padding:12px 0;border-right:1px solid var(--border)}
+.stat:last-child{border-right:none}
+.sv{font-family:'IBM Plex Mono',monospace;font-size:1.3rem;font-weight:700;line-height:1;display:block}
+.sl{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-top:3px;display:block}
+.prog-wrap{height:3px;background:var(--border);border-radius:2px;margin-bottom:5px;overflow:hidden}
+.prog{height:100%;background:linear-gradient(90deg,var(--c),color-mix(in srgb,var(--c) 70%,#fff));transition:width .5s ease;width:0;border-radius:2px}
+.prog-txt{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-align:right;margin-bottom:20px}
+
+/* card */
+.q-card{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:32px 36px;margin-bottom:18px;animation:up .3s ease}
+@keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.q-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+.q-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--c);background:color-mix(in srgb,var(--c) 8%,transparent);border:1px solid color-mix(in srgb,var(--c) 25%,transparent);padding:3px 10px;border-radius:2px}
+.q-sub{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted2);background:var(--panel2);border:1px solid var(--border);padding:3px 10px;border-radius:2px}
+.q-tbadge{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px}
+.tb-multi{color:var(--amber);background:rgba(255,184,0,.07);border:1px solid rgba(255,184,0,.2)}
+.tb-open{color:var(--purple);background:rgba(168,85,247,.07);border:1px solid rgba(168,85,247,.2)}
+.q-text{font-size:1.02rem;font-weight:500;line-height:1.65;margin-bottom:22px}
+
+/* options */
+.opts{display:flex;flex-direction:column;gap:9px}
+.opt{display:flex;align-items:flex-start;gap:13px;padding:12px 16px;border:1px solid var(--border);border-radius:5px;cursor:pointer;transition:border-color .12s,background .12s;background:var(--bg);user-select:none}
+.opt:hover:not(.locked){border-color:var(--c);background:color-mix(in srgb,var(--c) 4%,transparent)}
+.opt.sel{border-color:var(--c);background:color-mix(in srgb,var(--c) 7%,transparent)}
+.opt.ok{border-color:var(--correct);background:rgba(34,197,94,.07)}
+.opt.bad{border-color:var(--wrong);background:rgba(239,68,68,.07)}
+.opt.missed{border-color:var(--amber);background:rgba(255,184,0,.06)}
+.opt-box{width:18px;height:18px;flex-shrink:0;margin-top:2px;border:2px solid var(--border2);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;transition:all .12s}
+.opt.sel .opt-box{border-color:var(--c);background:var(--c);color:var(--bg)}
+.opt.ok .opt-box{border-color:var(--correct);background:var(--correct);color:#fff}
+.opt.bad .opt-box{border-color:var(--wrong);background:var(--wrong);color:#fff}
+.opt.missed .opt-box{border-color:var(--amber);background:var(--amber);color:#000}
+.opt-letter{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:3px;flex-shrink:0}
+.opt-text{font-size:.92rem;line-height:1.5}
+
+/* open */
+.open-inp{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:12px 16px;font-family:'IBM Plex Sans',sans-serif;font-size:.95rem;resize:none;transition:border-color .15s;margin-top:4px}
+.open-inp:focus{outline:none;border-color:var(--c)}
+.open-inp.ok{border-color:var(--correct);background:rgba(34,197,94,.07)}
+.open-inp.bad{border-color:var(--wrong);background:rgba(239,68,68,.07)}
+
+/* hint */
+.hint-btn{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--amber);background:rgba(255,184,0,.07);border:1px solid rgba(255,184,0,.2);padding:6px 14px;border-radius:4px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px;margin-top:16px}
+.hint-btn:hover{background:rgba(255,184,0,.13)}
+.hint-box{margin-top:10px;padding:12px 16px;background:rgba(255,184,0,.06);border:1px solid rgba(255,184,0,.2);border-radius:5px;font-size:.88rem;line-height:1.6;color:var(--amber);display:none;animation:up .2s ease}
+.hint-box.show{display:block}
+
+/* feedback */
+.feedback{margin-top:18px;padding:13px 18px;border-radius:5px;font-size:.88rem;line-height:1.6;display:none;animation:up .2s ease}
+.feedback.show{display:block}
+.fb-ok{background:rgba(34,197,94,.09);border:1px solid rgba(34,197,94,.3)}
+.fb-bad{background:rgba(239,68,68,.09);border:1px solid rgba(239,68,68,.3)}
+
+/* btns */
+.btn-row{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+.btn{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:1px;text-transform:uppercase;padding:10px 22px;border-radius:4px;cursor:pointer;border:none;transition:all .15s}
+.btn-check{background:var(--c);color:#07080b;font-weight:700}
+.btn-check:hover:not(:disabled){filter:brightness(1.15);transform:translateY(-1px)}
+.btn-check:disabled{background:var(--border);color:var(--muted);cursor:not-allowed;transform:none}
+.btn-next{background:transparent;color:var(--c);border:1px solid var(--c)}
+.btn-next:hover{background:color-mix(in srgb,var(--c) 8%,transparent)}
+.btn-skip{background:transparent;color:var(--muted2);border:1px solid var(--border2)}
+.btn-skip:hover{border-color:var(--muted);color:var(--text)}
+.hidden{display:none!important}
+
+/* score */
+#score-screen{display:none;text-align:center;padding:60px 24px 100px;max-width:680px;margin:0 auto;position:relative;z-index:1}
+.sc-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:4px;text-transform:uppercase;color:var(--c);border:1px solid color-mix(in srgb,var(--c) 30%,transparent);padding:5px 16px;border-radius:2px;display:inline-block;margin-bottom:20px}
+.sc-pct{font-family:'IBM Plex Mono',monospace;font-size:clamp(4rem,12vw,7rem);font-weight:700;line-height:1;margin:16px 0;color:var(--c)}
+.sc-msg{font-size:1.05rem;color:var(--muted2);margin:12px 0 32px}
+.sc-grid{display:flex;justify-content:center;gap:40px;flex-wrap:wrap;margin:24px 0 40px}
+.sc-item{text-align:center}
+.sc-num{font-family:'IBM Plex Mono',monospace;font-size:2rem;font-weight:700;display:block}
+.sc-lbl{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-top:3px;display:block}
+.sc-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn-home{font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:1px;text-transform:uppercase;padding:13px 32px;border-radius:4px;cursor:pointer;font-weight:700;transition:all .15s;background:transparent;color:var(--c);border:1px solid var(--c);text-decoration:none;display:inline-block}
+.btn-home:hover{background:color-mix(in srgb,var(--c) 8%,transparent)}
+.btn-retry{font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:1px;text-transform:uppercase;padding:13px 32px;border-radius:4px;cursor:pointer;font-weight:700;transition:all .15s;border:none;background:var(--c);color:#07080b}
+.btn-retry:hover{filter:brightness(1.15);transform:translateY(-1px)}
+
+@media(max-width:600px){
+  .q-card{padding:20px 18px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .stat:nth-child(2){border-right:none}
+  .stat:nth-child(3){border-right:1px solid var(--border)}
+}
+</style>
+</head>
+<body>
+
+<div id="quiz-screen" class="wrap">
+  <div class="topbar">
+    <a class="back" href="index.html">← Terug</a>
+    <span class="topic-pill">🗄️ Databanken Intro</span>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><span class="sv" id="sv-score" style="color:var(--correct)">0</span><span class="sl">Correct</span></div>
+    <div class="stat"><span class="sv" id="sv-wrong" style="color:var(--wrong)">0</span><span class="sl">Fout</span></div>
+    <div class="stat"><span class="sv" id="sv-left" style="color:var(--c)">—</span><span class="sl">Resterend</span></div>
+    <div class="stat"><span class="sv" id="sv-pct" style="color:#a855f7">—</span><span class="sl">Score %</span></div>
+  </div>
+  <div class="prog-wrap"><div class="prog" id="prog"></div></div>
+  <div class="prog-txt" id="prog-txt">Vraag 1 / —</div>
+
+  <div id="q-container"></div>
+
+  <div class="btn-row">
+    <button class="btn btn-skip" id="btn-skip" onclick="skipQ()">Sla over</button>
+    <button class="btn btn-check" id="btn-check" disabled onclick="check()">Controleer</button>
+    <button class="btn btn-next hidden" id="btn-next" onclick="nextQ()">Volgende →</button>
+  </div>
+</div>
+
+<div id="score-screen"></div>
+
+<script>
+window.QUESTIONS_databanken = [
+{type:"mc",q:"Wat is een database (databank)?",o:["Een spreadsheet","Een gestructureerde verzameling elektronische gegevens die door één of meerdere gebruikers gelijktijdig gemanipuleerd kan worden","Een programmeertaal","Een type besturingssysteem"],c:[1],h:"Twee kernkenmerken: gestructureerd én meerdere gebruikers tegelijk."},
+{type:"open",q:"Waarvoor staat DBMS?",ans:["database management system","databankbeheersysteem"],h:"Het systeem dat de toegang tot en integriteit van de databank beheert."},
+{type:"mc",q:"Wat is de taak van een DBMS?",o:["Data opslaan zonder beheer","Gegevens bekijken, wijzigen, verwijderen en de integriteit van de database bewaken","Netwerkverkeer beheren","Gebruikers authenticeren"],c:[1],h:"DBMS = het intermediaire systeem tussen applicaties en de ruwe data."},
+{type:"mc",q:"Wat is DDL?",o:["Data Definition Language — definieert de STRUCTUUR van data (tabellen, kolommen, datatypes)","Data Deletion Language","Dynamic Data Language","Database Definition Logic"],c:[0],h:"DDL = structuurdefinitie. CREATE, ALTER, DROP zijn DDL-commando's."},
+{type:"mc",q:"Wat is DML?",o:["Data Manipulation Language — manipuleert de INHOUD van data (INSERT, UPDATE, DELETE, SELECT)","Data Management Logic","Database Modification Layer","Dynamic Mapping Language"],c:[0],h:"DML = data-inhoud. Alles wat je met bestaande data doet (lezen, schrijven, aanpassen, verwijderen)."},
+{type:"multi",q:"Welke zijn DDL-commando's? (meerdere antwoorden)",o:["CREATE","ALTER","DROP","SELECT","INSERT"],c:[0,1,2],h:"DDL gaat over STRUCTUUR aanpassen. SELECT en INSERT werken op data-inhoud (DML/DQL)."},
+{type:"mc",q:"Wat doet het SQL-commando DROP TABLE?",o:["Verwijdert alle data uit de tabel maar behoudt de structuur","Verwijdert de tabel én alle data erin permanent","Past de structuur van de tabel aan","Leegt de tabel tijdelijk"],c:[1],h:"DROP = weg voor altijd. Niet te verwarren met DELETE (verwijdert rijen maar behoudt tabel)."},
+{type:"mc",q:"Wat is het verschil tussen VARCHAR en CHAR als datatype?",o:["Ze zijn identiek","VARCHAR is variabele lengte (spaart ruimte); CHAR is vaste lengte","CHAR is voor grote teksten; VARCHAR voor kleine","VARCHAR is numeriek; CHAR is tekst"],c:[1],h:"VARCHAR(50) kan 1 tot 50 tekens bevatten. CHAR(50) is altijd exact 50 tekens."},
+{type:"open",q:"Welk SQL-datatype gebruik je voor een kolom die een heel getal opslaat?",ans:["int","integer"],h:"Het meest basale numerieke datatype voor gehele getallen."},
+{type:"mc",q:"Wat doet NULL in SQL?",o:["Nul (het getal 0)","Een lege string","Een ontbrekende of onbekende waarde — verschilt van 0 en van een lege string","Een foutmelding"],c:[2],h:"NULL = onbekend/afwezig. IS NULL en IS NOT NULL zijn de operators om op NULL te testen."},
+{type:"mc",q:"Wat is AUTO_INCREMENT in MySQL?",o:["Een trigger dat automatisch data bijwerkt","Zorgt dat MySQL automatisch een oplopende waarde toekent aan een kolom (typisch een primary key)","Een type index","Een back-up functie"],c:[1],h:"Auto_increment = de database telt zelf op. Geen manuele ID-toewijzing nodig."},
+{type:"mc",q:"Wat doet SELECT DISTINCT?",o:["Sorteert resultaten alfabetisch","Toont enkel unieke waarden/combinaties — elimineert duplicaten","Selecteert de eerste rij","Telt het aantal rijen"],c:[1],h:"DISTINCT = geen duplicaten. SELECT DISTINCT stad toont elke stad één keer."},
+{type:"multi",q:"Welke aggregatiefuncties ken je in SQL? (meerdere antwoorden)",o:["COUNT","SUM","MIN","MAX","AVG","GROUP_CONCAT"],c:[0,1,2,3,4,5],h:"Alle zes zijn aggregatiefuncties die in de cursus worden behandeld."},
+{type:"mc",q:"Wat doet COUNT(*) in SQL?",o:["Telt het aantal kolommen","Telt het totale aantal rijen (inclusief NULL-waarden)","Telt het aantal niet-NULL waarden in een specifieke kolom","Berekent het gemiddelde"],c:[1],h:"* = alle rijen tellen, inclusief rijen met NULL-waarden in kolommen."},
+{type:"mc",q:"Wat is het verschil tussen WHERE en HAVING?",o:["Ze zijn identiek","WHERE filtert rijen VOOR groepering; HAVING filtert groepen NA groepering (na GROUP BY)","HAVING filtert rijen; WHERE filtert groepen","WHERE is voor DML; HAVING voor DDL"],c:[1],h:"WHERE = vóór GROUP BY. HAVING = ná GROUP BY. Je kunt geen aggregatiefunctie in WHERE gebruiken."},
+{type:"mc",q:"Wat doet GROUP BY?",o:["Sorteert de resultaten","Groepeert rijen met gemeenschappelijke waarden zodat aggregatiefuncties per groep worden berekend","Verwijdert duplicaten","Combineert tabellen"],c:[1],h:"GROUP BY = één resultaatrij per groep. Aggregaties worden per groep berekend."},
+{type:"mc",q:"Wat doet ORDER BY DESC?",o:["Sorteert oplopend (A→Z, 1→9)","Sorteert aflopend (Z→A, 9→1)","Verwijdert duplicaten in gesorteerde volgorde","Groepeert resultaten"],c:[1],h:"DESC = descending = dalend. ASC = ascending = stijgend (default)."},
+{type:"open",q:"Welk SQL-commando gebruik je om data in een tabel in te voegen?",ans:["insert","insert into"],h:"Het DML-commando voor het toevoegen van nieuwe rijen."},
+{type:"mc",q:"Wat doet UPDATE in SQL?",o:["Voegt nieuwe rijen toe","Past de waarden van bestaande rijen aan op basis van een conditie","Verwijdert rijen","Herstelt een tabel"],c:[1],h:"Altijd een WHERE-conditie gebruiken bij UPDATE — anders update je ALLE rijen!"},
+{type:"mc",q:"Wat doet DELETE in SQL?",o:["Verwijdert de tabel zelf","Verwijdert rijen uit een tabel op basis van een conditie","Verwijdert een kolom","Leegt de database"],c:[1],h:"DELETE verwijdert rijen. DROP verwijdert de tabel zelf."},
+{type:"mc",q:"Wat is een primaire sleutel (primary key)?",o:["Een kolom die NULL-waarden bevat","Een kolom (of combinatie) die elk record in de tabel uniek identificeert","Een verwijzing naar een andere tabel","Een tijdelijke sleutel voor queries"],c:[1],h:"PK = uniek + nooit NULL. Elke tabel heeft er typisch één."},
+{type:"mc",q:"Wat is het verschil tussen een natural key en een surrogate key?",o:["Ze zijn identiek","Natural key = bestaande zinvolle kolom (bijv. rijksregisternummer); surrogate key = kunstmatige kolom zonder betekenis (bijv. auto-increment ID)","Surrogate key is altijd een string; natural key een integer","Natural key is veiliger"],c:[1],h:"In de praktijk wordt bijna altijd een surrogate key gebruikt voor stabiliteit."},
+{type:"mc",q:"Wat is een vreemde sleutel (foreign key)?",o:["Een kolom die automatisch wordt gegenereerd","Een kolom die verwijst naar de primaire sleutel van een ander record, typisch in een andere tabel","Een versleutelde primaire sleutel","Een kolom die altijd uniek moet zijn"],c:[1],h:"FK = verwijzing naar PK van een andere tabel. Zorgt voor referentiële integriteit."},
+{type:"mc",q:"Wat is referentiële integriteit?",o:["Alle kolommen moeten waarden bevatten","Een foreign key mag nooit verwijzen naar een record dat niet bestaat in de gerefereerde tabel","Alle primaire sleutels moeten integers zijn","Tabellen mogen geen NULL-waarden bevatten"],c:[1],h:"Een FK mag niet verwijzen naar iets dat niet bestaat — anders verlies je integriteit."},
+{type:"multi",q:"Welke types relaties bestaan er tussen tabellen? (meerdere antwoorden)",o:["Één-op-één (1:1)","Één-op-veel (1:N)","Veel-op-veel (M:N)","Nul-op-een (0:1)"],c:[0,1,2],h:"De drie klassieke relatietypes in een relationeel datamodel."},
+{type:"mc",q:"Hoe stel je een veel-op-veel (M:N) relatie voor in een relationele database?",o:["Via een foreign key in één van de tabellen","Via een koppeltabel (junction table) met twee foreign keys die verwijzen naar de twee gerelateerde tabellen","Via een array-kolom","Via meerdere foreign keys in dezelfde kolom"],c:[1],h:"M:N = koppeltabel. Bijv. Studenten ↔ Cursussen via inschrijvingen-tabel."},
+{type:"mc",q:"Wat is normalisatie?",o:["Het versnellen van queries via indexen","Het proces om redundantie en inconsistenties in een datamodel te elimineren door data correct te verdelen over tabellen","Het versleutelen van gevoelige data","Het samenvoegen van tabellen voor performantie"],c:[1],h:"Normalisatie = correct verdelen van data om redundantie te vermijden."},
+{type:"mc",q:"Wat is de Eerste Normaalvorm (1NF)?",o:["Geen transitieve afhankelijkheden","Alle kolommen zijn atomair (niet deelbaar) en er zijn geen herhalende groepen","Alle niet-sleutelattributen zijn volledig afhankelijk van de volledige primaire sleutel","Geen redundante data"],c:[1],h:"1NF = atomaire waarden. Geen lijsten of herhalende kolommen in één cel."},
+{type:"mc",q:"Wat is de Tweede Normaalvorm (2NF)?",o:["Geen herhalende groepen","Atomaire waarden","Voldoet aan 1NF EN alle niet-sleutelattributen zijn volledig functioneel afhankelijk van de VOLLEDIGE primaire sleutel","Geen transitieve afhankelijkheden"],c:[2],h:"2NF elimineert partiële afhankelijkheden bij samengestelde primaire sleutels."},
+{type:"mc",q:"Wat is de Derde Normaalvorm (3NF)?",o:["Atomaire waarden","Geen partiële afhankelijkheden","Voldoet aan 2NF EN er zijn geen transitieve afhankelijkheden (niet-sleutelattribuut afhankelijk van ander niet-sleutelattribuut)","Alle foreign keys zijn gedefinieerd"],c:[2],h:"3NF = geen transitieve afhankelijkheden. A → B → C: B en C moeten los."},
+{type:"open",q:"Welk ERD-model gebruik je om de structuur van een database visueel voor te stellen?",ans:["entity relationship diagram","erd","entity-relationship diagram"],h:"De afkorting is drie letters en staat voor Entiteit-Relatie-Diagram."},
+{type:"mc",q:"Wat is een CROSS JOIN?",o:["Combineert rijen die gemeenschappelijke waarden hebben in een kolom","Combineert elke rij uit tabel A met elke rij uit tabel B (cartesisch product)","Selecteert rijen die NIET in een andere tabel voorkomen","Combineert alle rijen uit beide tabellen"],c:[1],h:"Cross join = cartesisch product. 10 rijen × 5 rijen = 50 resultaatrijen. Zelden nuttig."},
+{type:"mc",q:"Wat is een INNER JOIN?",o:["Toont alle rijen uit beide tabellen","Toont alleen rijen waarvoor er een overeenkomst is in BEIDE tabellen op basis van de join-conditie","Toont alle rijen uit de linker tabel, ook zonder match","Combineert elke rij met elke andere rij"],c:[1],h:"INNER = alleen de 'doorsnede'. Geen match = rij verschijnt niet in het resultaat."},
+{type:"mc",q:"Wat is een LEFT JOIN?",o:["Toont alleen rijen met een match","Toont alle rijen uit de LINKER tabel + overeenkomstige rijen uit de rechter tabel (rechts NULL als geen match)","Toont alleen rijen uit de rechter tabel","Toont rijen die in geen enkele tabel voorkomen"],c:[1],h:"LEFT = linker tabel is altijd volledig aanwezig. Rechts kan NULL zijn."},
+{type:"mc",q:"Wat is een scalaire subquery?",o:["Een subquery die meerdere rijen geeft","Een subquery die exact één waarde (1 rij, 1 kolom) terugggeeft","Een subquery in de FROM-clausule","Een subquery met IN-operator"],c:[1],h:"Scalair = één waarde. Kan gebruikt worden waar je anders een vaste waarde zou schrijven."},
+{type:"mc",q:"Wanneer gebruik je een subquery met IN?",o:["Wanneer je één exacte waarde wil vergelijken","Wanneer de subquery een lijst van waarden terug geeft en je wil controleren of een waarde in die lijst zit","Wanneer je tabellen wil samenvoegen","Wanneer je wil groeperen"],c:[1],h:"IN + subquery = 'is mijn waarde aanwezig in dit lijstje resultaten?'"},
+{type:"mc",q:"Wat is het verschil tussen een subquery en een JOIN?",o:["Ze zijn altijd identiek","Subquery's zijn leesbaar maar soms minder efficient; JOINs zijn efficiënter maar complexer — beiden kunnen dezelfde resultaten geven","JOINs zijn altijd sneller","Subquery's kunnen geen aggregaties bevatten"],c:[1],h:"In theorie equivalent, in de praktijk: JOIN is doorgaans sneller."},
+{type:"open",q:"Welk SQL-commando gebruik je om de structuur van een bestaande tabel aan te passen?",ans:["alter","alter table"],h:"Het DDL-commando voor structuurwijzigingen aan bestaande tabellen."},
+{type:"mc",q:"Wat doet CONCAT in MySQL?",o:["Verdeelt een string in delen","Telt het aantal characters in een string","Combineert twee of meer strings tot één string","Zoekt een substring in een string"],c:[2],h:"CONCAT('Hello', ' ', 'World') = 'Hello World'."},
+{type:"mc",q:"Wat doet SUBSTRING in MySQL?",o:["Combineert strings","Geeft een deel van een string terug op basis van startpositie en lengte","Verwijdert spaties","Vergelijkt twee strings"],c:[1],h:"SUBSTRING('Hallo', 1, 3) = 'Hal'. Startpositie is 1-gebaseerd in MySQL."},
+{type:"mc",q:"Wat is collation in de context van MySQL?",o:["Een type JOIN","De regels voor het vergelijken en sorteren van strings (bijv. hoofdlettergevoelig of niet)","Een type index","Een normalisatieregel"],c:[1],h:"Collation bepaalt hoe strings vergeleken worden. utf8_general_ci = case-insensitive."},
+{type:"mc",q:"Wat doet GROUP_CONCAT in MySQL?",o:["Groepeert rijen","Telt het aantal waarden per groep","Combineert alle waarden in een groep tot één komma-gescheiden string","Berekent de som per groep"],c:[2],h:"GROUP_CONCAT is MySQL-specifiek en verschijnt bij GROUP BY. Geeft een lijst als string."},
+{type:"mc",q:"Hoe test je of een waarde NULL is in SQL?",o:["WHERE kolom = NULL","WHERE kolom IS NULL","WHERE kolom == NULL","WHERE ISNULL(kolom)"],c:[1],h:"NULL kan niet vergeleken worden met = . Gebruik altijd IS NULL of IS NOT NULL."},
+{type:"mc",q:"Wat is het verschil tussen DELETE en TRUNCATE?",o:["Ze zijn identiek","DELETE verwijdert rijen op basis van een conditie (loggable); TRUNCATE verwijdert alle rijen snel zonder individuele logging en reset auto_increment","TRUNCATE is veiliger dan DELETE","DELETE is DDL; TRUNCATE is DML"],c:[1],h:"TRUNCATE = atomische reset van de hele tabel. Sneller maar onomkeerbaar."},
+{type:"mc",q:"Welk sleutelwoord gebruik je om aan te geven dat een kolom geen NULL-waarden mag bevatten?",o:["NOT EMPTY","REQUIRED","NOT NULL","MANDATORY"],c:[2],h:"NOT NULL = verplicht veld. De database weigert INSERT/UPDATE met NULL in die kolom."},
+{type:"mc",q:"Wat is een index in een database?",o:["Een lijst van alle tabellen","Een datastructuur die zoekoperaties versnelt door een gesorteerde verwijzing naar kolombegwaarden","Een type primary key","Een query die automatisch uitvoert"],c:[1],h:"Index = sneller zoeken, meer opslagruimte en tragere writes. Trade-off."},
+{type:"mc",q:"Wat is een VIEW in SQL?",o:["Een permanent opgeslagen kopie van een query-resultaat","Een virtuele tabel gebaseerd op een opgeslagen query — toont altijd actuele data wanneer aangesproken","Een type index","Een back-up van een tabel"],c:[1],h:"VIEW = opgeslagen query. Oproepen van de view voert de query steeds opnieuw uit."},
+{type:"mc",q:"Wat is een TRANSACTION in SQL?",o:["Een enkelvoudig SQL-commando","Een reeks SQL-commando's die als één geheel worden uitgevoerd — of alles slaagt, of niets (atomiciteit)","Een type join","Een procedure"],c:[1],h:"Transacties = atomiciteit. COMMIT = bevestig alles. ROLLBACK = maak alles ongedaan."},
+{type:"mc",q:"Wat doet ROLLBACK in SQL?",o:["Bevestigt alle wijzigingen in een transactie","Maakt alle wijzigingen ongedaan die gedaan zijn binnen de huidige transactie","Verwijdert de laatste tabel","Herstelt een deleted rij"],c:[1],h:"ROLLBACK = annuleer alles. COMMIT = bewaar alles. Beide zijn transactiecommando's."},
+{type:"open",q:"Welk commando gebruik je in SQL om een query te filteren op basis van een conditie?",ans:["where","where clause"],h:"Het meest gebruikte filtercommando in SQL, altijd na FROM."},
+{type:"mc",q:"Wat is het verschil tussen een relationele en een niet-relationele database?",o:["Er is geen verschil","Relationele databases gebruiken tabellen met vaste structuur en SQL; niet-relationele (NoSQL) databases gebruiken flexibele structuren (documents, key-value, graphs)","NoSQL databases zijn altijd sneller","Relationele databases zijn verouderd"],c:[1],h:"SQL = tabellen en relaties. NoSQL = flexibel, schaalbaar, minder structuur."},
+{type:"mc",q:"Wat is AVG in SQL?",o:["De maximale waarde","Het gemiddelde van numerieke waarden in een kolom","De som van waarden","Het aantal waarden"],c:[1],h:"AVG = average = gemiddelde. Werkt enkel op numerieke kolommen."},
+{type:"mc",q:"Wat is SUM in SQL?",o:["Telt het aantal rijen","Berekent de som van numerieke waarden","Geeft de maximale waarde","Geeft de minimale waarde"],c:[1],h:"SUM = totaal. SELECT SUM(prijs) FROM producten geeft de totaalprijs."},
+{type:"mc",q:"Welk SQL-commando gebruik je om een subquery te gebruiken als tijdelijke tabel?",o:["Subquery in WHERE","Subquery in SELECT","Subquery in FROM (met alias)","Subquery in GROUP BY"],c:[2],h:"Een subquery in FROM gedraagt zich als een tijdelijke tabel. Geef hem een alias."},
+{type:"mc",q:"Wat doet LIMIT in MySQL?",o:["Beperkt het aantal kolommen","Beperkt het aantal rijen dat teruggegeven wordt","Filtert resultaten op basis van een waarde","Sorteert resultaten"],c:[1],h:"LIMIT 10 = geef mij maximaal 10 rijen. Essentieel voor paginering."},
+{type:"mc",q:"Wat is een stored procedure?",o:["Een opgeslagen back-up","Een herbruikbaar blok SQL-code dat opgeslagen is in de database en opgeroepen kan worden","Een type trigger","Een view met parameters"],c:[1],h:"Stored procedure = herbruikbaar, server-side SQL-programma."},
+{type:"mc",q:"Wat is een trigger in de context van databases?",o:["Een alert in Zabbix","Een automatisch uitgevoerd stuk code dat afgaat bij een INSERT, UPDATE of DELETE op een tabel","Een type foreign key","Een constraint"],c:[1],h:"Database trigger ≠ Zabbix trigger. Dit zijn automatische acties bij data-wijzigingen."},
+{type:"mc",q:"Wat is lexicografische volgorde bij het vergelijken van strings?",o:["Volgorde op basis van stringlengte","Alfabetische volgorde op basis van de Unicode/ASCII-waarden van tekens","Volgorde op basis van het eerste teken alleen","Willekeurige volgorde"],c:[1],h:"'Aardig' < 'Aardig2' omdat de lege string < '2' in Unicode."},
+{type:"open",q:"Welk SQL-sleutelwoord gebruik je om resultaten te sorteren?",ans:["order by"],h:"Gevolgd door de kolomnaam en optioneel ASC of DESC."},
+{type:"mc",q:"Wat is een NOT NULL constraint?",o:["Zorgt dat een kolom altijd NULL is","Verbiedt NULL-waarden in een kolom — de kolom moet altijd een waarde bevatten","Zorgt dat alle waarden uniek zijn","Verbiedt lege strings"],c:[1],h:"NOT NULL = verplicht veld. Vergelijk met UNIQUE wat duplicaten verbiedt."},
+{type:"mc",q:"Wat doet de UNIQUE constraint?",o:["Verbiedt NULL-waarden","Zorgt dat alle waarden in een kolom uniek zijn (geen duplicaten)","Verbiedt lege strings","Versnelt zoekoperaties"],c:[1],h:"UNIQUE ≠ PRIMARY KEY. Een tabel kan meerdere UNIQUE kolommen hebben."},
+{type:"mc",q:"Wat is een RIGHT JOIN?",o:["Geeft alle rijen uit de linker tabel","Geeft alle rijen uit de RECHTER tabel + overeenkomstige rijen uit de linker tabel (links NULL als geen match)","Geeft alleen rijen met een match in beide tabellen","Geeft alle rijen uit beide tabellen"],c:[1],h:"RIGHT JOIN = spiegelbeeld van LEFT JOIN. Zelden gebruikt — je kan altijd een LEFT JOIN gebruiken door de tabellen om te wisselen."},
+{type:"mc",q:"Wat is een FULL OUTER JOIN?",o:["Geeft alleen matches","Geeft alle rijen uit BEIDE tabellen, ook rijen zonder match aan beide kanten (NULL waar geen match)","Geeft het cartesisch product","Is hetzelfde als een CROSS JOIN"],c:[1],h:"FULL OUTER = alle rijen van links + alle rijen van rechts, ook zonder match. MySQL ondersteunt dit niet standaard."},
+{type:"mc",q:"Wat is het doel van normalisatie tot 3NF?",o:["De database zo snel mogelijk te maken","Redundantie elimineren, data-integriteit garanderen en update-anomalieën voorkomen","Alle tabellen samen te voegen","De database te versleutelen"],c:[1],h:"Zonder normalisatie: één update op één plek moet op tien plekken doorgevoerd worden."},
+{type:"mc",q:"Wat zijn update-anomalieën in een database?",o:["Fouten bij het uitvoeren van UPDATE-commando's","Inconsistenties die optreden wanneer dezelfde data op meerdere plaatsen opgeslagen is en niet overal bijgewerkt wordt","Fouten bij het toevoegen van nieuwe rijen","Conflicten tussen transacties"],c:[1],h:"Update-anomalie = data op 5 plaatsen, slechts 4 bijgewerkt → inconsistentie."},
+{type:"mc",q:"Wat is een subquery in FROM ook wel genoemd?",o:["Geneste view","Derived table (afgeleide tabel)","Stored procedure","Common table expression"],c:[1],h:"Een subquery in FROM gedraagt zich als een tijdelijke tabel — vandaar 'derived table'."},
+{type:"mc",q:"Wat is het verschil tussen een database en een schema in MySQL?",o:["Database is groter dan schema","In MySQL zijn database en schema synoniemen — CREATE DATABASE en CREATE SCHEMA doen hetzelfde","Schema is een subset van database","Schema bevat enkel tabellen; database ook views en procedures"],c:[1],h:"In MySQL: CREATE SCHEMA = CREATE DATABASE. Ze zijn volledig equivalent."},
+{type:"mc",q:"Wat is een functionele afhankelijkheid?",o:["Een afhankelijkheid tussen tabellen","Een relatie waarbij de waarde van attribuut A de waarde van attribuut B uniek bepaalt (A → B)","Een type foreign key","Een type index"],c:[1],h:"A → B: als je A kent, ken je B eenduidig. Bijv. rijksregisternummer → naam."},
+{type:"mc",q:"Wat is een partiële afhankelijkheid en in welke normaalvorm elimineert men ze?",o:["Afhankelijkheid van een deel van de PK — geëlimineerd in 1NF","Afhankelijkheid van een deel van de samengestelde PK — geëlimineerd in 2NF","Afhankelijkheid tussen niet-sleutelattributen — 3NF","Afhankelijkheid via een tussenliggende sleutel"],c:[1],h:"2NF: elk niet-sleutelattribuut moet afhangen van de VOLLEDIGE PK, niet slechts een deel ervan."},
+{type:"mc",q:"Wat is een transitieve afhankelijkheid?",o:["Een directe afhankelijkheid van de PK","A → B → C waarbij C afhankelijk is van B (niet-sleutelattribuut) in plaats van direct van de PK","Een afhankelijkheid tussen twee PK's","Een afhankelijkheid in een 1NF-relatie"],c:[1],h:"3NF: vermijd A → B → C. C moet direct afhangen van de PK, niet via tussenstap B."},
+{type:"mc",q:"Wat is een kandidaatsleutel?",o:["Altijd de primaire sleutel","Een minimale verzameling attributen die elk record uniek identificeert — er kunnen meerdere zijn, maar één wordt gekozen als PK","Een type vreemde sleutel","Een alternatieve index"],c:[1],h:"Kandidaatsleutels = alle mogelijke PK-kandidaten. De PK is de gekozen kandidaatsleutel."},
+{type:"mc",q:"Wat is een alternatieve sleutel (alternate key)?",o:["Een tweede PK","Een kandidaatsleutel die NIET gekozen is als primaire sleutel — nog steeds uniek maar niet de officiële PK","Een type index","Een UNIQUE constraint"],c:[1],h:"Alternate key = kandidaatsleutel die de 'verkiezing' verloor. Bijv. e-mailadres als alternatief voor user_id."},
+{type:"mc",q:"Wat is een samengestelde sleutel?",o:["Een sleutel bestaande uit meerdere tabellen","Een sleutel bestaande uit twee of meer attributen die samen uniek zijn","Een encrypted primary key","Een auto-increment sleutel"],c:[1],h:"Samengesteld = meerdere kolommen vormen samen de sleutel. Bijv. (student_id, cursus_id) in een koppeltabel."},
+{type:"open",q:"Welk SQL-sleutelwoord gebruik je om een kolom als primaire sleutel te definiëren bij CREATE TABLE?",ans:["primary key"],h:"Twee woorden die samen de meest fundamentele constraint definiëren."},
+{type:"mc",q:"Wat doet de CHECK constraint?",o:["Controleert of een waarde in een andere tabel bestaat","Valideert dat waarden in een kolom voldoen aan een specifieke conditie","Garandeert uniciteit","Verbiedt NULL-waarden"],c:[1],h:"CHECK(leeftijd >= 18) = de database weigert waarden die de conditie schenden."},
+{type:"mc",q:"Wat is het verschil tussen ON DELETE CASCADE en ON DELETE RESTRICT?",o:["Ze zijn identiek","CASCADE = verwijder de gerelateerde rijen automatisch; RESTRICT = weiger de delete als er gerelateerde rijen zijn","RESTRICT verwijdert automatisch","CASCADE blokkeert de delete"],c:[1],h:"Cascade = kettingreactie, verwijder alles. Restrict = beschermend, geen wezen-rijen toegestaan."},
+{type:"mc",q:"Wat is een join condition (ON-clausule) bij een JOIN?",o:["Een filter na de join","De conditie die bepaalt welke rijen van de twee tabellen samengevoegd worden","Een type ORDER BY","Een type GROUP BY"],c:[1],h:"ON tabel1.kolom = tabel2.kolom — de kolommen waarop de tabellen samengevoegd worden."},
+{type:"mc",q:"Wat is een self-join?",o:["Een join van een tabel met zichzelf — met aliassen — om hiërarchieën of relaties binnen één tabel te bevragen","Een type CROSS JOIN","Een join zonder ON-clausule","Een join van twee identieke tabellen"],c:[0],h:"Bijv. employees tabel met manager_id die verwijst naar employee_id in dezelfde tabel."},
+{type:"mc",q:"Wat is een non-equi join?",o:["Een join waarbij geen gelijkheidsconditie gebruikt wordt","Een join met ON tabel1.id != tabel2.id of gebruik van <, >, BETWEEN","Een type CROSS JOIN","Beide opties A en B"],c:[3],h:"Bijv. ON salary BETWEEN min_sal AND max_sal — combineer rijen op basis van een bereik."},
+{type:"mc",q:"Wat doet COALESCE in SQL?",o:["Combineert strings","Geeft de eerste niet-NULL waarde uit een lijst van argumenten","Telt niet-NULL waarden","Vervangt lege strings door NULL"],c:[1],h:"COALESCE(a, b, c) = geef a als niet-NULL, anders b, anders c. Handig voor NULL-afhandeling."},
+{type:"mc",q:"Wat doet IFNULL in MySQL?",o:["Test of een waarde NULL is","Geeft de tweede waarde als de eerste NULL is (MySQL-specifiek equivalent van COALESCE met 2 argumenten)","Vervangt alle NULL door 0","Telt NULL waarden"],c:[1],h:"IFNULL(kolom, 0) = geef de kolomwaarde, tenzij NULL, geef dan 0."},
+{type:"mc",q:"Wat is een correlated subquery?",o:["Een subquery die altijd hetzelfde resultaat geeft","Een subquery die voor elke rij van de buitenste query opnieuw uitgevoerd wordt, waarbij het resultaat afhangt van de huidige rij","Een subquery in de FROM-clausule","Een subquery met IN-operator"],c:[1],h:"Correlated = afhankelijk van de buitenste query. Trager dan niet-gecorreleerde subqueries."},
+{type:"mc",q:"Wat doet EXISTS in SQL?",o:["Controleert of een tabel bestaat","Geeft TRUE als de subquery minstens één rij retourneert — efficiënter dan IN voor grote datasets","Telt het aantal rijen","Geeft de eerste rij"],c:[1],h:"EXISTS = efficiënt testen of er iets bestaat. Stopt zodra de eerste overeenkomende rij gevonden is."},
+{type:"mc",q:"Wat is het verschil tussen IN en EXISTS?",o:["Ze zijn identiek","IN vergelijkt met een lijst van waarden; EXISTS test of een subquery rijen retourneert — EXISTS is efficiënter bij grote subquery-resultaten","EXISTS is altijd trager","IN werkt niet met subqueries"],c:[1],h:"IN materialiseert de hele subquery-lijst. EXISTS stopt bij de eerste match. Voor grote datasets: kies EXISTS."},
+{type:"mc",q:"Wat is UNION in SQL?",o:["Een type JOIN","Combineert resultaten van twee queries in één resultatenset — verwijdert duplicaten (gebruik UNION ALL om duplicaten te bewaren)","Een type GROUP BY","Een type subquery"],c:[1],h:"UNION = stapel resultaten op elkaar. Kolommen moeten overeenkomen. UNION ALL behoudt duplicaten."},
+{type:"mc",q:"Wat is het verschil tussen UNION en UNION ALL?",o:["Ze zijn identiek","UNION verwijdert duplicaten (trager); UNION ALL behoudt alle rijen inclusief duplicaten (sneller)","UNION ALL verwijdert duplicaten","UNION is sneller"],c:[1],h:"UNION = DISTINCT na combinatie. UNION ALL = alles zonder deduplicatie. Kies ALL als duplicaten oké zijn."},
+{type:"mc",q:"Wat is INTERSECT in SQL?",o:["Combineer alle rijen","Geeft enkel rijen die in BEIDE queries voorkomen","Geeft rijen die in de eerste maar niet tweede query voorkomen","Een type JOIN"],c:[1],h:"INTERSECT = doorsnede. Enkel de gemeenschappelijke rijen van beide resultatensets."},
+{type:"mc",q:"Wat is EXCEPT (of MINUS) in SQL?",o:["Geeft de doorsnede","Geeft rijen die in de eerste query voorkomen maar NIET in de tweede","Geeft alle rijen van beide queries","Een type subquery"],c:[1],h:"EXCEPT = verschil. Alles van query 1 minus wat ook in query 2 zit."},
+{type:"mc",q:"Wat is een CTE (Common Table Expression)?",o:["Een type stored procedure","Een tijdelijke benoemde resultatenset gedefinieerd met WITH die binnen één query hergebruikt kan worden","Een type view","Een type index"],c:[1],h:"WITH cte AS (SELECT ...) SELECT * FROM cte — maakt complexe queries leesbaarder."},
+{type:"mc",q:"Wat is een recursive CTE?",o:["Een CTE die zichzelf aanroept","Een CTE die via recursie hiërarchieën kan doorlopen (bijv. organigrammen, categoriestructuren)","Een type stored procedure","Een type view"],c:[1],h:"Recursive CTE = hiërarchieën bevragen. CEO → manager → medewerker, oneindig diep."},
+{type:"mc",q:"Wat is een window function in SQL?",o:["Een type aggregatiefunctie","Een functie die berekeningen uitvoert over een set rijen (window) gerelateerd aan de huidige rij, zonder te groeperen","Een type JOIN","Een type subquery"],c:[1],h:"ROW_NUMBER(), RANK(), LAG(), LEAD() zijn window functions. Resulaat per rij zonder GROUP BY."},
+{type:"mc",q:"Wat doet ROW_NUMBER() als window function?",o:["Geeft het totale aantal rijen","Kent een uniek oplopend nummer toe aan elke rij binnen de partition, gesorteerd op een opgegeven kolom","Rangschikt rijen met gedeelde nummers bij gelijke waarden","Berekent een lopend totaal"],c:[1],h:"ROW_NUMBER() = 1, 2, 3... uniek per rij. RANK() geeft dezelfde rang bij gelijke waarden."},
+{type:"mc",q:"Wat doet PARTITION BY in een window function?",o:["Splitst de tabel permanent","Deelt de resultatenset in partities waarbinnen de window function onafhankelijk berekend wordt","Een type GROUP BY","Een type WHERE"],c:[1],h:"PARTITION BY = window function herstart voor elke partitie. Bijv. ROW_NUMBER() per afdeling."},
+{type:"mc",q:"Wat is LAG() als window function?",o:["De volgende rij bekijken","De waarde van een kolom in een vorige rij bekijken zonder zelf-join","Het gemiddelde van vorige rijen","Een type ranking functie"],c:[1],h:"LAG(kolom, 1) = waarde van de vorige rij. Nuttig voor vergelijking met vorige periode."},
+{type:"mc",q:"Wat is LEAD() als window function?",o:["De vorige rij bekijken","De waarde van een kolom in een volgende rij bekijken","Een type aggregatie","Een type ranking"],c:[1],h:"LEAD(kolom, 1) = waarde van de volgende rij. Nuttig voor lookahead-vergelijkingen."},
+{type:"mc",q:"Wat is SUM() OVER() als window function?",o:["Een groepsgewijs totaal","Een lopend totaal (running total) berekend over de huidige en vorige rijen","Het totaal van de volledige tabel","Een type aggregatie"],c:[1],h:"SUM(bedrag) OVER (ORDER BY datum) = cumulatief totaal per datum. Geen GROUP BY nodig."},
+{type:"mc",q:"Wat is het verschil tussen CHAR_LENGTH() en LENGTH() in MySQL?",o:["Ze zijn identiek","CHAR_LENGTH() telt tekens; LENGTH() telt bytes — verschil bij multibyte-tekens (bijv. UTF-8 emojis)","LENGTH() telt tekens","CHAR_LENGTH() telt bytes"],c:[1],h:"Voor ASCII is er geen verschil. Voor UTF-8 multibyte tekens is LENGTH() groter dan CHAR_LENGTH()."},
+{type:"mc",q:"Wat doet UPPER() en LOWER() in SQL?",o:["Vergelijken strings","Converteren tekst naar hoofdletters (UPPER) of kleine letters (LOWER)","Extraheren tekst","Verwijderen spaties"],c:[1],h:"UPPER('hello') = 'HELLO'. LOWER('HELLO') = 'hello'. Nuttig voor case-insensitive vergelijkingen."},
+{type:"mc",q:"Wat doet TRIM() in SQL?",o:["Verkorte tekst","Verwijdert leidende en afsluitende spaties (of opgegeven tekens) van een string","Knipt tekst bij vaste lengte","Verwijdert alle spaties"],c:[1],h:"TRIM(' hello ') = 'hello'. LTRIM voor links, RTRIM voor rechts."},
+{type:"mc",q:"Wat doet REPLACE() in SQL?",o:["Vervangt rijen","Vervangt alle voorkomens van een substring door een andere substring in een string","Verwijdert tekens","Vergelijkt strings"],c:[1],h:"REPLACE('hello world', 'world', 'SQL') = 'hello SQL'."},
+{type:"mc",q:"Wat doet ROUND() in SQL?",o:["Afkappen","Afrondt een getal tot het opgegeven aantal decimalen","Berekent een modulo","Vergelijkt getallen"],c:[1],h:"ROUND(3.14159, 2) = 3.14. FLOOR() = naar beneden, CEIL() = naar boven."},
+{type:"mc",q:"Wat doet ABS() in SQL?",o:["Geeft de som","Geeft de absolute (positieve) waarde van een getal","Berekent het gemiddelde","Geeft de maximale waarde"],c:[1],h:"ABS(-5) = 5. ABS(5) = 5. Verwijdert het minteken."},
+{type:"mc",q:"Wat is NOW() in MySQL?",o:["De datum van de laatste update","Geeft de huidige datum én tijd","Geeft enkel de huidige datum","Geeft het huidige tijdstip zonder datum"],c:[1],h:"NOW() = '2025-01-15 14:30:00'. CURDATE() = enkel datum. CURTIME() = enkel tijd."},
+{type:"mc",q:"Wat doet DATE_FORMAT() in MySQL?",o:["Converteert een string naar datum","Formatteert een datum/tijd-waarde naar een specifiek string-formaat","Berekent het verschil tussen datums","Voegt tijd toe aan een datum"],c:[1],h:"DATE_FORMAT(NOW(), '%d/%m/%Y') = '15/01/2025'. Flexibel datumopmaak."},
+{type:"mc",q:"Wat is DATEDIFF() in MySQL?",o:["Voegt een interval toe aan een datum","Berekent het verschil in dagen tussen twee datums","Formatteert een datum","Geeft de huidige datum"],c:[1],h:"DATEDIFF('2025-12-31', '2025-01-01') = 364. Altijd in dagen."},
+{type:"mc",q:"Wat doet DATE_ADD() in MySQL?",o:["Trekt een interval af","Voegt een tijdinterval toe aan een datum (bijv. 30 dagen, 2 maanden)","Formatteert een datum","Berekent het verschil"],c:[1],h:"DATE_ADD(NOW(), INTERVAL 30 DAY) = datum over 30 dagen."},
+{type:"mc",q:"Wat is het verschil tussen DATETIME en TIMESTAMP in MySQL?",o:["Ze zijn identiek","DATETIME: grote bereik (1000-9999), geen tijdzone-conversie; TIMESTAMP: kleiner bereik (1970-2038), automatische tijdzone-conversie","TIMESTAMP heeft groter bereik","DATETIME converteeert tijdzones"],c:[1],h:"TIMESTAMP slaat UTC op en converteert naar server-tijdzone. DATETIME = letterlijk wat ingevoerd is."},
+{type:"mc",q:"Wat is het ENUM datatype in MySQL?",o:["Een type integer","Een datatype waarbij de kolom enkel één waarde uit een vooraf gedefinieerde lijst kan bevatten","Een type string","Een type boolean"],c:[1],h:"ENUM('Maandag','Dinsdag',...) = efficiënte opslag van beperkte waardelijsten. Ordinal vergelijking mogelijk."},
+{type:"mc",q:"Wat is het SET datatype in MySQL?",o:["Een type ENUM","Een datatype waarbij een kolom nul of meer waarden uit een vooraf gedefinieerde lijst kan bevatten","Een type array","Een type JSON"],c:[1],h:"SET verschilt van ENUM: meerdere waarden tegelijk mogelijk. SET('lezen','schrijven','admin')."},
+{type:"mc",q:"Wat is JSON als datatype in MySQL?",o:["Een type tekst","Een datatype voor het opslaan van JSON-documenten met validatie en uitgebreide querying via JSON-functies","Een type BLOB","Een type array"],c:[1],h:"MySQL 5.7+ ondersteunt native JSON. JSON_EXTRACT(), JSON_ARRAY(), JSON_OBJECT() voor manipulatie."},
+{type:"mc",q:"Wat doet JSON_EXTRACT() in MySQL?",o:["Valideert JSON","Extraheert een waarde uit een JSON-document op een opgegeven pad","Converteert JSON naar tabel","Vergelijkt JSON-documenten"],c:[1],h:"JSON_EXTRACT(data, '$.naam') of de kortere notatie data->'$.naam'."},
+{type:"mc",q:"Wat is een Full-Text index in MySQL?",o:["Een index op alle kolommen","Een speciale index voor tekstzoekopdrachten die efficiënte MATCH...AGAINST queries mogelijk maakt","Een type UNIQUE index","Een type PRIMARY KEY"],c:[1],h:"Full-text index = zoek in tekst zoals een zoekmachine. MATCH(kolom) AGAINST('zoekterm')."},
+{type:"mc",q:"Wat is MATCH...AGAINST in MySQL?",o:["Een type JOIN","Een full-text zoekopdracht die relevante rijen teruggeeft gebaseerd op tekstovereenkomst","Een type string-vergelijking","Een type subquery"],c:[1],h:"MATCH(beschrijving) AGAINST('database' IN BOOLEAN MODE) = zoek naar 'database' in de tekst."},
+{type:"mc",q:"Wat is het verschil tussen MyISAM en InnoDB als MySQL storage engine?",o:["Ze zijn identiek","InnoDB: transacties, foreign keys, row-level locking, ACID; MyISAM: geen transacties, tabel-level locking, sneller voor reads","MyISAM ondersteunt transacties","InnoDB is verouderd"],c:[1],h:"InnoDB = de moderne standaard. MyISAM = verouderd, geen transacties. Gebruik altijd InnoDB."},
+{type:"mc",q:"Wat zijn ACID-eigenschappen in database transacties?",o:["Atomicity, Consistency, Isolation, Durability","Access, Control, Integrity, Data","Automatic, Consistent, Independent, Durable","Atomic, Complete, Isolated, Dated"],c:[0],h:"ACID = de vier garanties van betrouwbare transacties. InnoDB implementeert ze alle vier."},
+{type:"mc",q:"Wat is Atomicity in ACID?",o:["Snelle transacties","Een transactie is alles-of-niets: ofwel alle operaties slagen, ofwel geen enkele wordt definitief gemaakt","Geïsoleerde transacties","Duurzame opslag"],c:[1],h:"Atomiciteit = ondeelbaar. Bijv. bankoverschrijving: debet EN credit, of geen van beide."},
+{type:"mc",q:"Wat is Isolation in ACID?",o:["Transacties zijn versleuteld","Gelijktijdige transacties beïnvloeden elkaar niet — elke transactie ziet een consistente databasestate","Transacties bewaren hun resultaat permanent","Transacties brengen de database van valide staat naar valide staat"],c:[1],h:"Isolation = concurrent transacties zien elkaars tussenstappen niet. Verschillende isolation levels bestaan."},
+{type:"mc",q:"Wat is een dirty read?",o:["Een corrupte query","Het lezen van onbevestigde data van een andere, nog niet gecommitte transactie — treedt op bij lage isolation levels","Een type NULL-waarde","Een type fout in de query"],c:[1],h:"Dirty read = lees data die nog niet gecommit is. Als die transactie rolt terug, las je fictieve data."},
+{type:"mc",q:"Wat is een phantom read?",o:["Een niet-bestaande rij lezen","Rijen die in een eerste query niet bestonden verschijnen in een tweede query binnen dezelfde transactie door inserts van andere transacties","Een type dirty read","Een type non-repeatable read"],c:[1],h:"Phantom = spookrijen. Nieuwe rijen verschijnen terwijl je nog in dezelfde transactie zit."},
+{type:"mc",q:"Wat is database sharding?",o:["Een type back-up","Het horizontaal verdelen van data over meerdere servers op basis van een shard key voor schaalbaarheid","Een type index","Een type normalisatie"],c:[1],h:"Sharding = horizontale schaling. Elk shard heeft een deel van de data. Complexer maar schaalbaar."},
+{type:"mc",q:"Wat is database replication?",o:["Een type back-up","Het automatisch kopiëren van data van een primaire server (master) naar één of meer secundaire servers (slaves/replicas)","Een type normalisatie","Een type sharding"],c:[1],h:"Replicatie = redundantie + load balancing voor reads. Master voor writes, replicas voor reads."},
+{type:"mc",q:"Wat is een deadlock in een database?",o:["Een server die crasht","Een situatie waarbij twee transacties op elkaar wachten om elkaars locks vrij te geven — beide kunnen niet verder","Een type dirty read","Een type index fout"],c:[1],h:"Deadlock = A wacht op B, B wacht op A. De database detecteert dit en rollt één transactie terug."},
+{type:"mc",q:"Wat is optimistische vs pessimistische locking?",o:["Ze zijn identiek","Pessimistisch = lock data meteen (voorkomen conflicten); Optimistisch = lock niet, check bij commit (performanter maar conflicten mogelijk)","Optimistisch is altijd beter","Pessimistisch is altijd beter"],c:[1],h:"Pessimistisch = veilig maar trager. Optimistisch = sneller maar vereist conflictresolutie."},
+{type:"mc",q:"Wat is een stored function vs stored procedure?",o:["Ze zijn identiek","Function = geeft altijd één waarde terug, bruikbaar in queries; Procedure = kan meerdere resultaten teruggeven, niet in queries bruikbaar","Procedure geeft altijd één waarde","Function kan meerdere waarden teruggeven"],c:[1],h:"Function = gebruik in SELECT. Procedure = CALL. Function retourneert altijd via RETURN."},
+{type:"mc",q:"Wat is een cursor in SQL?",o:["Een type index","Een programmeerstructuur die het mogelijk maakt rij per rij door een resultatenset te itereren","Een type stored procedure","Een type view"],c:[1],h:"Cursor = itereer rij per rij. Langzamer dan set-based operaties maar soms noodzakelijk."},
+{type:"mc",q:"Wat is een event in MySQL?",o:["Een type trigger","Een geplande taak die automatisch SQL-code uitvoert op basis van een tijdschema (eenmalig of herhalend)","Een type stored procedure","Een type index"],c:[1],h:"MySQL Event Scheduler = een cron-job voor de database. Automatisch data opruimen, rapporten genereren."},
+{type:"mc",q:"Wat is de purpose van EXPLAIN in MySQL?",o:["Geeft uitleg over SQL-syntax","Toont het uitvoeringsplan van een query — hoe MySQL de query zal uitvoeren, welke indexes gebruikt worden","Geeft documentatie","Voert de query langzamer uit voor debugging"],c:[1],h:"EXPLAIN = kijk in de motor. Ziet MySQL de index? Doet het een full table scan? Optimaliseer daarna."},
+{type:"mc",q:"Wat is een covering index?",o:["Een index op alle kolommen","Een index die alle kolommen bevat die een query nodig heeft — de query kan volledig beantwoord worden vanuit de index zonder de tabel te raadplegen","Een type UNIQUE index","Een type full-text index"],c:[1],h:"Covering index = ultra-efficiënt. Geen tabel-lookup nodig. Query leest enkel de index."},
+{type:"mc",q:"Wat is een composite index (samengestelde index)?",o:["Een index op één kolom","Een index op meerdere kolommen die queries met WHERE-condities op die combinatie van kolommen versnelt","Een type UNIQUE index","Een type full-text index"],c:[1],h:"Composite index op (voornaam, achternaam) versnelt queries op beide kolommen samen (leftmost prefix rule)."},
+{type:"mc",q:"Wat is de 'leftmost prefix rule' voor composite indexes?",o:["De index werkt altijd van links naar rechts","Een composite index op (A, B, C) kan gebruikt worden voor queries op A, of (A, B), of (A, B, C) maar NIET op alleen B of C","De index werkt altijd","De index werkt enkel voor de eerste kolom"],c:[1],h:"Index op (voornaam, achternaam): WHERE voornaam werkt. WHERE achternaam werkt NIET als enige conditie."},
+{type:"mc",q:"Wat is query caching in MySQL?",o:["Een type index","Het in-memory cachen van query-resultaten zodat dezelfde query direct uit cache bediend wordt — MySQL 8.0 heeft dit verwijderd","Een type stored procedure","Een type replicatie"],c:[1],h:"Query cache = snel maar problematisch bij veel writes. MySQL 8.0 heeft het afgeschaft wegens performantieproblemen."},
+{type:"mc",q:"Wat is de difference between CHAR and VARCHAR in terms of storage?",o:["Er is geen verschil","CHAR(n) gebruikt altijd n bytes (gevuld met spaties indien korter); VARCHAR(n) gebruikt enkel de benodigde bytes plus 1-2 bytes overhead","VARCHAR gebruikt meer ruimte","CHAR is variabel"],c:[1],h:"CHAR = vaste lengte, efficiënt voor vaste-lengte data. VARCHAR = variabel, efficiënt voor variabele data."},
+{type:"mc",q:"Wat is TEXT vs VARCHAR in MySQL?",o:["Ze zijn identiek","VARCHAR: maximaal 65535 bytes, opgeslagen in de rij; TEXT: grote tekst opgeslagen buiten de rij, trager maar voor grote teksten","TEXT is kleiner","VARCHAR kan groter zijn dan TEXT"],c:[1],h:"Voor kleine tot middelgrote strings: VARCHAR. Voor grote documenten (artikelen, beschrijvingen): TEXT."},
+{type:"mc",q:"Wat is BLOB in MySQL?",o:["Een type TEXT","Binary Large Object — opslaan van binaire data (afbeeldingen, bestanden) in de database","Een type VARCHAR","Een type JSON"],c:[1],h:"BLOB = binaire data. TINYBLOB, BLOB, MEDIUMBLOB, LONGBLOB. Overweeg alternatieven (bestandssysteem + pad)."},
+{type:"mc",q:"Wat is het verschil tussen TINYINT, SMALLINT, INT en BIGINT?",o:["Ze zijn identiek","Ze hebben verschillende opslaggroottes en bereiken: TINYINT=1byte(-128/127), SMALLINT=2bytes, INT=4bytes, BIGINT=8bytes","BIGINT is het kleinst","TINYINT heeft het grootste bereik"],c:[1],h:"Kies het kleinste type dat past bij je data. TINYINT voor boolean-achtige waarden, BIGINT voor grote IDs."},
+{type:"mc",q:"Wat is UNSIGNED in de context van integer datatypes?",o:["Een teken zonder waarde","Verwijdert de negatieve helft van het bereik — een UNSIGNED INT gaat van 0 tot 4.294.967.295 i.p.v. -2.1B tot +2.1B","Een type NULL","Een type constraint"],c:[1],h:"UNSIGNED = enkel positieve getallen. Verdubbelt het positieve bereik. Gebruik voor IDs en tellers."},
+{type:"mc",q:"Wat is DECIMAL vs FLOAT/DOUBLE?",o:["Ze zijn identiek","DECIMAL = exacte precisie voor financiële data; FLOAT/DOUBLE = benaderend met drijvende komma, geschikt voor wetenschappelijke berekeningen","FLOAT is preciezer","DECIMAL is sneller"],c:[1],h:"Nooit FLOAT voor geld! 0.1 + 0.2 ≠ 0.3 in floating point. Gebruik DECIMAL(10,2) voor euro's."},
+{type:"mc",q:"Wat is een database schema?",o:["Een type back-up","De logische structuur van de database: tabellen, kolommen, datatypes, constraints en relaties","Een type query","Een type stored procedure"],c:[1],h:"Schema = de blauwdruk. Hoe is de database georganiseerd? In MySQL = equivalent aan database."},
+{type:"mc",q:"Wat is het doel van INFORMATION_SCHEMA in MySQL?",o:["Een standaard systeemtabel","Een speciale database die metadata bevat over alle databases, tabellen, kolommen en constraints op de server","Een type back-up","Een type replicatie"],c:[1],h:"INFORMATION_SCHEMA = de meta-database. SELECT * FROM INFORMATION_SCHEMA.TABLES geeft alle tabellen."},
+{type:"mc",q:"Wat is SHOW TABLES en SHOW COLUMNS in MySQL?",o:["Type back-up commando's","MySQL-specifieke commando's om respectievelijk alle tabellen en de kolommen van een tabel te tonen","Type queries","Type stored procedures"],c:[1],h:"SHOW TABLES = overzicht. SHOW COLUMNS FROM tabelnaam = kolomstructuur. Handig voor verkenning."},
+{type:"mc",q:"Wat is DESCRIBE (of DESC) in MySQL?",o:["Sorteert aflopend","Toont de structuur van een tabel: kolomnamen, datatypes, NULL-toestaan, keys, defaults","Een type subquery","Een type view"],c:[1],h:"DESCRIBE tabelnaam = snel de tabelstructuur bekijken. Alternatief: SHOW COLUMNS FROM tabelnaam."},
+{type:"mc",q:"Wat is GRANT in MySQL?",o:["Een type INSERT","Een opdracht om privileges toe te kennen aan een gebruiker","Een type SELECT","Een type UPDATE"],c:[1],h:"GRANT SELECT ON db.* TO 'user'@'host' = geef leesrechten. REVOKE neemt rechten af."},
+{type:"mc",q:"Wat is REVOKE in MySQL?",o:["Een type DELETE","Een opdracht om privileges van een gebruiker in te trekken","Een type DROP","Een type ROLLBACK"],c:[1],h:"REVOKE SELECT ON db.* FROM 'user'@'host' = verwijder leesrechten."},
+{type:"mc",q:"Wat is de purpose van FLUSH PRIVILEGES in MySQL?",o:["Herstelt de database","Herlaadt de privilege-tabel in het geheugen nadat rechten handmatig gewijzigd zijn","Verwijdert alle caches","Herstart de MySQL-server"],c:[1],h:"Na manuele wijzigingen in de mysql.user tabel is FLUSH PRIVILEGES nodig. Na GRANT/REVOKE niet."},
+{type:"mc",q:"Wat is een database gebruiker vs root in MySQL?",o:["Ze zijn identiek","Root heeft alle rechten; applicatiegebruikers hebben beperkte, specifieke rechten — principle of least privilege","Root is gevaarlijk","Database gebruikers zijn altijd veiliger"],c:[1],h:"Root enkel voor beheer. Applicaties krijgen een eigen gebruiker met enkel de nodige rechten."},
+{type:"mc",q:"Wat is database backup in MySQL met mysqldump?",o:["Een type replicatie","Een command-line tool die een SQL-bestand genereert met alle CREATE- en INSERT-statements om de database te herstellen","Een type stored procedure","Een type export naar CSV"],c:[1],h:"mysqldump -u root -p database > backup.sql — exporteer naar SQL. herstel: mysql < backup.sql."},
+{type:"mc",q:"Wat is LOAD DATA INFILE in MySQL?",o:["Een type INSERT","Laadt data efficiënt vanuit een tekstbestand (CSV) in een tabel — veel sneller dan individuele INSERTs","Een type back-up","Een type IMPORT"],c:[1],h:"LOAD DATA INFILE is de snelste manier om bulk data in MySQL te laden. Ideaal voor data-import."},
+{type:"mc",q:"Wat is de purpose van SELECT INTO OUTFILE in MySQL?",o:["Een type SELECT","Exporteert query-resultaten naar een bestand op de server in een opgegeven formaat (CSV, TSV)","Een type back-up","Een type INSERT"],c:[1],h:"SELECT * FROM tabel INTO OUTFILE '/tmp/export.csv' = exporteer naar CSV op de server."},
+{type:"mc",q:"Wat is een multi-table UPDATE in SQL?",o:["Bijwerken van meerdere databases","Een UPDATE die via JOIN meerdere tabellen betrekt om de juiste waarden te bepalen voor de update","Een type stored procedure","Een type trigger"],c:[1],h:"UPDATE t1 JOIN t2 ON t1.id=t2.id SET t1.kolom = t2.waarde WHERE ... — update op basis van een andere tabel."},
+{type:"mc",q:"Wat is een multi-table DELETE in SQL?",o:["Verwijderen van meerdere databases","Een DELETE die via JOIN rijen uit meerdere tabellen tegelijk verwijdert","Een type DROP","Een type TRUNCATE"],c:[1],h:"DELETE t1, t2 FROM t1 JOIN t2 ON t1.id=t2.t1_id WHERE ... — verwijder uit beide tabellen via één statement."},
+{type:"mc",q:"Wat is het verschil tussen een clustered en non-clustered index?",o:["Ze zijn identiek","Clustered index bepaalt de fysieke volgorde van data in de tabel (InnoDB: de PK); non-clustered = aparte structuur die verwijst naar de data","Non-clustered is sneller","Clustered indexes zijn verboden in MySQL"],c:[1],h:"InnoDB gebruikt de PK als clustered index. Alle andere indexes verwijzen via de PK naar de data."},
+{type:"mc",q:"Wat is query optimalisatie en waarom is het belangrijk?",o:["Het schrijven van kortere queries","Het aanpassen van queries, indexes en schema voor betere performance — kritisch bij grote datasets","Het hernoemen van tabellen","Het verwijderen van onnodige kolommen"],c:[1],h:"Slechte query op grote tabel = seconden/minuten. Geoptimaliseerde query = milliseconden. EXPLAIN is je vriend."},
+{type:"mc",q:"Wat is een N+1 query probleem?",o:["Een type normalisatiefout","Een performantieprobleem waarbij voor N records nog N extra queries uitgevoerd worden — oplosbaar met een JOIN","Een type deadlock","Een type transactiefout"],c:[1],h:"Haal 10 gebruikers op → doe voor elke gebruiker nog een extra query voor zijn orders = 11 queries. JOIN = 1 query."},
+{type:"mc",q:"Wat is database connection pooling?",o:["Een type replicatie","Het hergebruiken van bestaande database-verbindingen in plaats van telkens een nieuwe te openen — vermindert overhead","Een type caching","Een type sharding"],c:[1],h:"Connection pooling = verbindingen delen. Openen/sluiten van verbindingen kost tijd. Pool hergebruikt ze."},
+{type:"mc",q:"Wat is ORM (Object-Relational Mapping)?",o:["Een type database","Een abstractielaag die objecten uit een programmeertaal automatisch omzet naar database-operaties","Een type query","Een type stored procedure"],c:[1],h:"ORM = schrijf objectgeoriënteerde code, ORM vertaalt naar SQL. Bijv. Hibernate (Java), Eloquent (PHP)."},
+{type:"mc",q:"Waarom is parameterized queries (prepared statements) belangrijk?",o:["Ze zijn sneller","Ze scheiden data van SQL-code, waardoor SQL-injection onmogelijk wordt","Ze zijn makkelijker te schrijven","Ze vereisen minder geheugen"],c:[1],h:"Prepared statement = data is nooit code. Gebruikersinput kan geen SQL-injectie veroorzaken."},
+{type:"mc",q:"Wat is het verschil tussen DDL en DML in transactiebeheer?",o:["Ze zijn identiek","DDL (CREATE, DROP, ALTER) veroorzaakt in MySQL een impliciete COMMIT en kan niet worden teruggedraaid; DML (INSERT, UPDATE, DELETE) kan worden teruggedraaid","DML kan niet worden teruggedraaid","DDL kan altijd worden teruggedraaid"],c:[1],h:"Pas op: DROP TABLE is niet te rollbacken in MySQL. Denk goed na voor je DDL uitvoert."},
+{type:"mc",q:"Wat is een NULL-safe comparison operator in MySQL?",o:["IS NULL","<=> (spaceship operator) — vergelijkt twee waarden waarbij NULL ook gelijk kan zijn aan NULL","= NULL","!= NULL"],c:[1],h:"NULL <=> NULL geeft TRUE. NULL = NULL geeft NULL (onbekend). Spaceship is NULL-safe."},
+{type:"mc",q:"Wat is BETWEEN in SQL?",o:["Een type JOIN","Een operator die test of een waarde binnen een bereik valt (inclusief beide grenzen): WHERE leeftijd BETWEEN 18 AND 65","Een type subquery","Een type aggregatie"],c:[1],h:"BETWEEN is inclusief. BETWEEN 18 AND 65 = >= 18 AND <= 65."},
+{type:"mc",q:"Wat is LIKE in SQL?",o:["Een type vergelijking voor exacte waarden","Een patroonvergelijking waarbij % nul of meer tekens vervangt en _ precies één teken vervangt","Een type string functie","Een type ORDER BY"],c:[1],h:"'Jo%' = begint met Jo. '%son' = eindigt op son. '%oh%' = bevat oh. Case-insensitief in MySQL default."},
+{type:"mc",q:"Wat is REGEXP in MySQL?",o:["Een type LIKE","Een krachtigere patroonvergelijking via reguliere expressies voor complexere zoekpatronen","Een type full-text search","Een type index"],c:[1],h:"REGEXP '^[A-Z]' = begint met hoofdletter. Krachtig maar trager dan LIKE. Gebruik indien nodig."},
+{type:"mc",q:"Wat is een view met updatable-eigenschap?",o:["Alle views zijn updatable","Een view is updatable als het aan specifieke condities voldoet (geen GROUP BY, DISTINCT, JOIN op meerdere tabellen) — dan kan je INSERT/UPDATE via de view","Views kunnen nooit geüpdatet worden","Alle views zijn read-only"],c:[1],h:"Simpele views op één tabel zijn vaak updatable. Complexe views (GROUP BY, JOINs) zijn read-only."},
+{type:"open",q:"Welk SQL commando gebruik je om een nieuwe gebruiker aan te maken in MySQL?",ans:["create user","create user 'user'@'host'"],h:"Gevolgd door IDENTIFIED BY 'wachtwoord' en GRANT voor de rechten."},
+{type:"mc",q:"Wat is het verschil tussen INNER JOIN en LEFT JOIN in termen van resultaat?",o:["Ze geven altijd hetzelfde resultaat","INNER JOIN: alleen rijen met matches in beide tabellen; LEFT JOIN: alle rijen uit linker tabel + matches rechts (NULL als geen match)","LEFT JOIN geeft minder resultaten","INNER JOIN geeft meer resultaten"],c:[1],h:"Als alle linkse rijen een match hebben, zijn de resultaten identiek. Zonder match: links zit in LEFT maar niet INNER."},
+{type:"mc",q:"Wat is het verschil tussen normalisatie en denormalisatie?",o:["Ze zijn identiek","Normalisatie: verdeel data voor integriteit en minder redundantie; Denormalisatie: voeg redundantie toe voor betere read-performance","Denormalisatie is altijd beter","Normalisatie is verouderd"],c:[1],h:"Trade-off: genormaliseerd = integer en minder data, maar meer JOINs. Gedenormaliseerd = sneller lezen, meer redundantie."},
+{type:"mc",q:"Wat is een OLTP database?",o:["Online Analytical Processing","Online Transaction Processing — geoptimaliseerd voor snelle, kleine transacties zoals webapplicaties en e-commerce","Een type big data database","Een type data warehouse"],c:[1],h:"OLTP = hoge concurrentie, kleine transacties, genormaliseerd schema. MySQL is een typisch OLTP-systeem."},
+{type:"mc",q:"Wat is een OLAP database?",o:["Online Transaction Processing","Online Analytical Processing — geoptimaliseerd voor complexe analytische queries op grote datasets","Een type RDBMS","Een type document database"],c:[1],h:"OLAP = datawarehouse, business intelligence. Groot, gedenormaliseerd, weinig writes, complexe reads."},
+{type:"mc",q:"Wat is een star schema in data warehousing?",o:["Een type ster-netwerk","Een schema met één centrale fact table omringd door dimension tables — optimaal voor analytische queries","Een type normalisatie","Een type OLTP schema"],c:[1],h:"Star schema: feitentabel in het midden, dimensietabellen (tijd, product, klant) eromheen als sterpunten."},
+{type:"mc",q:"Wat is het verschil tussen een fact table en een dimension table?",o:["Ze zijn identiek","Fact table: meetbare feiten (verkopen, bedragen, aantallen); Dimension table: contextuele beschrijvende informatie (wie, wat, wanneer, waar)","Dimension table bevat feiten","Fact table bevat beschrijvingen"],c:[1],h:"Factentabel: verkoop_bedrag, hoeveelheid. Dimensietabel: klant_naam, product_naam, datum."},
+{type:"mc",q:"Wat is database federation?",o:["Een type replicatie","Het distribueren van data over meerdere databases die elk verantwoordelijk zijn voor een subset — transparant voor de applicatie","Een type sharding","Een type normalisatie"],c:[1],h:"Federation = verdeel tabellen over servers. Gebruikerstabel op server A, ordertabel op server B."},
+{type:"mc",q:"Wat is een FULL OUTER JOIN en wanneer heb je het nodig?",o:["Hetzelfde als INNER JOIN","Geeft alle rijen uit BEIDE tabellen, ook zonder match aan beide kanten — in MySQL gesimuleerd via UNION van LEFT en RIGHT JOIN","Hetzelfde als CROSS JOIN","Bestaat niet in SQL"],c:[1],h:"MySQL ondersteunt FULL OUTER JOIN niet direct — gebruik UNION van LEFT JOIN en RIGHT JOIN."},
+{type:"open",q:"Welk SQL-sleutelwoord gebruik je om tabellen samen te voegen op basis van een overeenkomende kolom?",ans:["join","inner join"],h:"Het meest fundamentele sleutelwoord voor het combineren van tabellen."},
+{type:"mc",q:"Wat is een self join?",o:["Een tabel die naar zichzelf refereert","Een JOIN waarbij dezelfde tabel twee keer gebruikt wordt, nuttig voor hiërarchische data (bijv. medewerker-manager)","Een type subquery","Een type view"],c:[1],h:"Self join = dezelfde tabel met twee aliassen. Nuttig voor hiërarchieën in één tabel."},
+{type:"mc",q:"Wat doet de SQL functie NOW()?",o:["Geeft het huidige tijdstip","Geeft de huidige datum en tijd van de databaseserver","Geeft de datum van de laatste update","Geeft een random tijdstip"],c:[1],h:"NOW() = huidige datum + tijd op de server. DATE(NOW()) geeft enkel de datum."},
+{type:"mc",q:"Wat is het verschil tussen CHAR_LENGTH en LENGTH in MySQL?",o:["Ze zijn identiek","CHAR_LENGTH telt het aantal tekens; LENGTH telt het aantal bytes — verschil bij multibyte karaktersets zoals UTF-8","LENGTH telt tekens; CHAR_LENGTH bytes","LENGTH is standaard SQL; CHAR_LENGTH is MySQL-specifiek"],c:[1],h:"Bij UTF-8 kan één teken meerdere bytes zijn. CHAR_LENGTH = tekens (logisch). LENGTH = bytes (fysiek)."},
+{type:"mc",q:"Wat doet ROUND(waarde, decimalen) in MySQL?",o:["Rondt af naar het dichtstbijzijnde geheel getal","Rondt een getal af op het opgegeven aantal decimalen","Knipt decimalen af","Verdubbelt het getal"],c:[1],h:"ROUND(3.456, 2) = 3.46. ROUND(3.456, 0) = 3."},
+{type:"mc",q:"Wat is een CHECK constraint in SQL?",o:["Een type primary key","Een constraint die een conditie oplegt aan de waarden in een kolom — bijv. leeftijd > 0","Een type index","Een type foreign key"],c:[1],h:"CHECK = validatieregel op kolomniveau. Bijv. CHECK (prijs > 0) verbiedt negatieve prijzen."},
+{type:"open",q:"Welk SQL-sleutelwoord gebruik je om een waarde te vervangen als deze NULL is?",ans:["coalesce","ifnull","isnull"],h:"In MySQL heet het IFNULL(waarde, vervanging). In standaard SQL is het COALESCE."},
+{type:"mc",q:"Wat is een natural join?",o:["Een join op basis van alle gelijknamige kolommen","Een join waarbij MySQL automatisch de kolommen koppelt met dezelfde naam in beide tabellen","Een type self join","Een type cross join"],c:[1],h:"Natural join = impliciete join conditie op basis van gelijknamige kolommen. Praktisch zelden aangeraden."},
+{type:"mc",q:"Wat is het verschil tussen UNION en UNION ALL?",o:["Ze zijn identiek","UNION verwijdert duplicaten; UNION ALL behoudt alle rijen inclusief duplicaten — UNION ALL is sneller","UNION ALL verwijdert duplicaten","UNION is voor verschillende tabellen; UNION ALL voor dezelfde"],c:[1],h:"UNION = sorteert en dedupliceert (langzamer). UNION ALL = alles, sneller. Kies bewust."},
+{type:"mc",q:"Wat is een correlated subquery?",o:["Een subquery in FROM","Een subquery die afhankelijk is van de buitenste query — wordt voor elke rij van de buitenste query opnieuw uitgevoerd","Een scalaire subquery","Een subquery in SELECT"],c:[1],h:"Correlated = gekoppeld aan de buitenste query. Langzaam maar soms noodzakelijk."},
+{type:"mc",q:"Wat is een niet-correlated subquery?",o:["Een subquery die afhankelijk is van de buitenste query","Een subquery die onafhankelijk is en eenmalig uitgevoerd wordt — het resultaat wordt gebruikt door de buitenste query","Een type join","Een type view"],c:[1],h:"Niet-correlated = eenmalig uitvoeren, resultaat hergebruiken. Efficiënter dan correlated subquery."},
+{type:"mc",q:"Wat doet de EXISTS operator in SQL?",o:["Controleert of een waarde in een lijst staat","Geeft TRUE als de subquery minstens één rij terugggeeft — gebruikt voor efficiënte bestaanscontrole","Vergelijkt twee waarden","Telt rijen"],c:[1],h:"EXISTS = bestaat er een match? Stopt bij de eerste gevonden rij — efficiënter dan COUNT(*) > 0."},
+{type:"mc",q:"Wat is het verschil tussen EXISTS en IN bij subqueries?",o:["Ze zijn identiek","EXISTS stopt bij de eerste match (efficiënt bij grote datasets); IN evalueert de volledige lijst","IN is altijd sneller","EXISTS is enkel voor JOIN-vervanging"],c:[1],h:"EXISTS = stop bij eerste match. IN = evalueer alles. Bij grote datasets is EXISTS vaak sneller."},
+{type:"mc",q:"Wat is een recursive CTE (Common Table Expression)?",o:["Een type view","Een tijdelijke resultatenset die naar zichzelf kan verwijzen — nuttig voor het doorlopen van hiërarchische data zoals organisatiestructuren","Een type stored procedure","Een type trigger"],c:[1],h:"Recursive CTE = doorloop hiërarchieën. Bijv. alle onderliggende managers van een directeur."},
+{type:"mc",q:"Wat is EXPLAIN in MySQL?",o:["Documenteert een query","Toont het uitvoeringsplan van een query — hoe MySQL de query zal uitvoeren, welke indexen gebruikt worden","Voert een query simulatief uit","Optimaliseert een query automatisch"],c:[1],h:"EXPLAIN = inzicht in query performance. Toont of indexen gebruikt worden en hoeveel rijen gescand worden."},
+{type:"mc",q:"Wat is een primary key constraint met meerdere kolommen (samengestelde PK)?",o:["Meerdere primary keys in één tabel","Een primary key bestaande uit twee of meer kolommen waarvan de combinatie uniek is","Bestaat niet in SQL","Een type composite index"],c:[1],h:"Samengestelde PK = uniekheid over meerdere kolommen. Bijv. (studentnr, cursuscode) in een inschrijvingstabel."},
+{type:"mc",q:"Wat is een functionele afhankelijkheid in normalisatie?",o:["Een type foreign key","Een relatie waarbij kolom A de waarde van kolom B uniek bepaalt (A → B) — de basis van normalisatietheorie","Een type check constraint","Een type join"],c:[1],h:"A → B = als je A kent, ken je B. Bijv. studentnr → naam (studentnummer bepaalt de naam)."},
+{type:"mc",q:"Wat zijn insertion anomalies in een denormalized database?",o:["Fouten bij INSERT-syntax","Situaties waarbij je geen nieuw record kan toevoegen zonder ook onnodige andere data toe te voegen","Conflicten tussen transacties","Type conversiefouten bij INSERT"],c:[1],h:"Insert anomalie = bijv. je kunt een nieuwe cursus pas toevoegen als er al een student is ingeschreven."},
+{type:"mc",q:"Wat zijn deletion anomalies?",o:["Fouten bij DELETE-syntax","Situaties waarbij het verwijderen van één record onbedoeld ook andere nuttige informatie verwijdert","Transactiefouten","Type conflicten"],c:[1],h:"Delete anomalie = bijv. als de laatste student van een cursus weg is, verdwijnt ook de cursusinformatie."},
+{type:"mc",q:"Wat is het verschil tussen OLTP en OLAP databases?",o:["Ze zijn identiek","OLTP = Online Transaction Processing (veel kleine transacties); OLAP = Online Analytical Processing (grote complexe analyses)","OLAP is sneller voor transacties","OLTP is beter voor analyses"],c:[1],h:"OLTP = webshop. OLAP = business intelligence. Andere workloads, andere architecturen."},
+{type:"mc",q:"Wat is een data warehouse?",o:["Een type back-up","Een centrale opslagplaats voor geïntegreerde data uit meerdere bronnen, geoptimaliseerd voor analyse en rapportage (OLAP)","Een type NAS","Een type database voor transacties"],c:[1],h:"Data warehouse = centrale analytische database. Geïntegreerd vanuit meerdere bronnen voor BI."},
+{type:"mc",q:"Wat is denormalisatie en wanneer past je het toe?",o:["Normalisatie ongedaan maken","Bewust redundantie introduceren in een database om queryperestaties te verbeteren — performance vs. integriteit trade-off","Een fout in het datamodel","Altijd een goede praktijk"],c:[1],h:"Denormalisatie = join vermijden door data samen te zetten. Sneller lezen, complexer schrijven."},
+{type:"mc",q:"Wat is het doel van een samengestelde index?",o:["Een index op een primaire sleutel","Een index op meerdere kolommen samen — nuttig voor queries die op die combinatie filteren of sorteren","Een type primary key","Een type foreign key"],c:[1],h:"Samengestelde index = optimaliseer queries op meerdere kolommen tegelijk. Volgorde van kolommen in index telt!"},
+{type:"mc",q:"Wat is SQL injection en hoe voorkom je het in MySQL?",o:["Een type databasefout","Een aanval waarbij kwaadaardige SQL-code wordt ingevoerd via gebruikersinput — voorkomen via prepared statements/parameterized queries","Een type constraint-fout","Een type syntaxisfout"],c:[1],h:"SQL injection via prepared statements voorkomen: de database behandelt input dan als data, nooit als code."},
+{type:"mc",q:"Wat is een prepared statement?",o:["Een SQL-statement in een bestand","Een voor-gecompileerd SQL-statement met placeholders voor parameters — veilig tegen SQL injection en efficiënter bij herhaalde uitvoering","Een type view","Een type stored procedure"],c:[1],h:"Prepared statements = veiligheid + performance. Eenmalig compileren, meerdere keren uitvoeren."},
+{type:"mc",q:"Wat is InnoDB in MySQL?",o:["Een type query-optimizer","De standaard storage engine van MySQL die transacties, foreign keys en row-level locking ondersteunt","Een type index","Een type replicatiesysteem"],c:[1],h:"InnoDB = ACID-compliant storage engine. Ondersteunt transacties en referentiële integriteit via FK's."},
+{type:"mc",q:"Wat zijn ACID-eigenschappen van een database?",o:["Automatisch, Consequent, Inconsistent, Duurzaam","Atomiciteit, Consistentie, Isolatie, Duurzaamheid — garanties voor betrouwbare transacties","Authenticiteit, Confidentialiteit, Integriteit, Duurzaamheid","Asynchroon, Compleet, Integraal, Direct"],c:[1],h:"ACID = fundamenteel voor transacties. Alles of niets, consistent eindresultaat, geïsoleerd, permanent."},
+{type:"mc",q:"Wat is atomiciteit (Atomicity) in ACID?",o:["Elke query is een atoom","Alle operaties in een transactie worden volledig uitgevoerd, of helemaal niet — geen halve transacties","Transacties zijn klein","Transacties zijn snel"],c:[1],h:"Atomiciteit = alles of niets. Overboeking geslaagd maar bijschrijving mislukt? Rollback van de afschrijving."},
+{type:"mc",q:"Wat is isolatie (Isolation) in ACID?",o:["Tabellen zijn gescheiden","Gelijktijdige transacties beïnvloeden elkaar niet — elke transactie werkt alsof ze de enige is","Databases zijn geïsoleerd van het netwerk","Gebruikers zijn geïsoleerd"],c:[1],h:"Isolatie = concurrent veilig. Twee mensen die tegelijk hetzelfde saldo bijwerken — geen conflicten."},
+{type:"mc",q:"Wat is duurzaamheid (Durability) in ACID?",o:["Data wordt regelmatig geback-upt","Eenmaal gecommit, blijft een transactie bewaard zelfs bij systeemstoringen","Data wordt versleuteld","Transacties duren lang"],c:[1],h:"Durability = gecommit = permanent. Stroom valt weg na COMMIT? Data is er nog bij herstart."},
+{type:"mc",q:"Wat is een database normalization anomaly?",o:["Een syntaxisfout in SQL","Een probleem met data-integriteit bij INSERT, UPDATE of DELETE veroorzaakt door redundante data in een niet-genormaliseerde tabel","Een type constraint-fout","Een type index-fout"],c:[1],h:"Anomalieën = problemen door redundantie. Normalisatie elimineert ze door data correct te verdelen."},
+{type:"mc",q:"Wat is een 'candidate key' in normalisatie?",o:["Een alternatieve vreemde sleutel","Een kolom of combinatie die de tabel uniek identificeert en als primary key zou kunnen dienen — minimaal en uniek","Een type surrogate key","Een type samengestelde sleutel"],c:[1],h:"Candidate key = mogelijke primary key. Er kunnen meerdere zijn; je kiest er één als PK."},
+{type:"mc",q:"Wat is een 'alternate key'?",o:["Een back-up van de primary key","Een candidate key die NIET als primary key gekozen is maar wel uniek en minimaal is","Een type vreemde sleutel","Een type samengestelde sleutel"],c:[1],h:"Alternate key = de kandidaat die niet gewonnen heeft. Wordt typisch als UNIQUE constraint geïmplementeerd."},
+{type:"mc",q:"Wat is een 'superkey' in relationele theorie?",o:["Een primary key met extra kolommen","Een set kolommen die rijen uniek identificeert — niet noodzakelijk minimaal (kan extra kolommen bevatten)","Een type samengestelde sleutel","Een type vreemde sleutel"],c:[1],h:"Superkey = uniek, maar niet per se minimaal. Een candidate key is een minimale superkey."},
+{type:"mc",q:"Wat is het verschil tussen een 'hard delete' en een 'soft delete'?",o:["Ze zijn identiek","Hard delete = rij verwijderd uit database; soft delete = rij gemarkeerd als verwijderd (bijv. deleted_at kolom) maar fysiek aanwezig","Soft delete is sneller","Hard delete is veiliger"],c:[1],h:"Soft delete = logisch verwijderd, fysiek bewaard. Nuttig voor audit trails en ongedaan maken."},
+{type:"mc",q:"Wat is een 'star schema' in een data warehouse?",o:["Een type normalisatieschema","Een denormalized schema met een centrale feitentabel omringd door dimensietabellen — geoptimaliseerd voor analytische queries","Een type ER-diagram","Een type indexstructuur"],c:[1],h:"Star schema = één centrale fact table + meerdere dimension tables. Snel voor analytical queries."},
+{type:"mc",q:"Wat zijn window functions in SQL?",o:["Functies voor GUI-vensters","Functies die berekeningen uitvoeren over een reeks rijen gerelateerd aan de huidige rij zonder ze te groeperen — bijv. ROW_NUMBER(), RANK()","Een type aggregatiefunctie","Een type subquery"],c:[1],h:"Window functions = aggregaties zonder GROUP BY. Behoud alle rijen én voeg afgeleide waarden toe."},
+{type:"mc",q:"Wat doet ROW_NUMBER() als window function?",o:["Telt het aantal rijen","Wijst een uniek, oplopend volgnummer toe aan elke rij binnen een partitie op basis van de ORDER BY","Geeft de rang met gelijke waarden hetzelfde nummer","Geeft de rijposities in de originele tabel"],c:[1],h:"ROW_NUMBER() = 1,2,3,4... altijd uniek, ook bij gelijke waarden."},
+{type:"mc",q:"Wat is het verschil tussen RANK() en DENSE_RANK()?",o:["Ze zijn identiek","RANK() laat gaten bij gelijke waarden (1,1,3); DENSE_RANK() laat geen gaten (1,1,2)","DENSE_RANK laat gaten","RANK is altijd opeenvolgend"],c:[1],h:"RANK: gelijke waarden = zelfde rang, volgende rang slaat gat over. DENSE_RANK: geen gaten."},
+{type:"mc",q:"Wat is een lateral join (LATERAL)?",o:["Een type cross join","Een join waarbij de rechterkant van de join een subquery is die de kolommen van de linkerkant mag refereren — zoals een correlated subquery als join","Een type self join","Een type full outer join"],c:[1],h:"LATERAL join = krachtig voor per-rij subqueries die de buitenste rij mogen zien."},
+{type:"mc",q:"Wat is het doel van de CASE WHEN expressie in SQL?",o:["Een type filter","Conditionele logica in een query — geeft verschillende waarden terug op basis van condities (if-then-else in SQL)","Een type aggregatie","Een type join"],c:[1],h:"CASE WHEN ... THEN ... ELSE ... END = if-else in SQL. Nuttig voor categorisering en transformaties."},
+{type:"mc",q:"Wat is een 'materialized view'?",o:["Een standaard view","Een view waarvan het resultaat fysiek opgeslagen wordt — sneller om op te vragen maar moet periodiek vernieuwd worden","Een type index","Een type tabel"],c:[1],h:"Materialized view = gecachte view-resultaten. Sneller lezen, vereist vernieuwing bij data-wijzigingen."},
+{type:"mc",q:"Wat is database sharding?",o:["Een type back-up","Het horizontaal verdelen van een database over meerdere servers op basis van een sharding key — voor horizontale schaalbaarheid","Een type replicatie","Een type partitionering"],c:[1],h:"Sharding = deel de data op over meerdere servers. Elke server heeft een subset van de data."},
+{type:"mc",q:"Wat is database replicatie?",o:["Het kopiëren van tabellen","Het synchroniseren van data tussen meerdere databaseservers voor beschikbaarheid en leesprestaties","Een type back-up","Een type sharding"],c:[1],h:"Replicatie = kopieën bijhouden. Master-slave: schrijven naar master, lezen van slaves."},
+{type:"mc",q:"Wat is een 'deadlock' in databases?",o:["Een database die vastloopt","Een situatie waarbij twee transacties elkaar blokkeren — elke transactie wacht op een resource die de andere bezit","Een type time-out","Een type syntax-fout"],c:[1],h:"Deadlock = A wacht op B, B wacht op A. De database detecteert dit en annuleert één transactie."},
+{type:"mc",q:"Wat is 'query optimization' in MySQL?",o:["Het handmatig herschrijven van queries","Het automatisch bepalen van het meest efficiënte uitvoeringsplan door de query optimizer — indexgebruik, join-volgorde, etc.","Een type stored procedure","Een type view"],c:[1],h:"MySQL optimizer kiest het beste plan. EXPLAIN toont wat de optimizer besloten heeft."},
+{type:"mc",q:"Wat is een 'covering index'?",o:["Een index die alle tabelkolommen bevat","Een index die alle kolommen bevat die de query nodig heeft zodat de query uitvoerbaar is zonder de tabel zelf te raadplegen","Een type primary key","Een type samengestelde index"],c:[1],h:"Covering index = geen table lookup nodig. Query vindt alles in de index — maximale snelheid."},
+{type:"mc",q:"Wat is het verschil tussen '=' en 'LIKE' in SQL?",o:["Ze zijn identiek","'=' vergelijkt exacte waarden; 'LIKE' vergelijkt patronen met wildcards (% voor alles, _ voor één teken)","LIKE is sneller","'=' ondersteunt wildcards"],c:[1],h:"LIKE 'Jan%' = begint met Jan. LIKE '%an%' = bevat 'an'. '=' vergelijkt exact."},
+{type:"mc",q:"Wat is MySQL Workbench?",o:["Een type database-engine","Een grafische tool voor het ontwerpen, beheren en querien van MySQL-databases","Een type index","Een type replicatietool"],c:[1],h:"MySQL Workbench = GUI voor MySQL. ER-diagrammen maken, queries uitvoeren, servers beheren."},
+{type:"mc",q:"Wat is een 'schema migration'?",o:["Het verplaatsen van een database","Een gecontroleerde wijziging van de databasestructuur (schema) via versie-beheerde scripts — bijv. een nieuwe kolom toevoegen","Een type back-up","Een type replicatie"],c:[1],h:"Schema migration = versie-beheer voor je database. Net als git voor code, maar voor database-structuur."},
+{type:"mc",q:"Wat is het verschil tussen een database 'user' en een 'role' in MySQL?",o:["Ze zijn identiek","User = individueel account met credentials; Role = set van privileges die aan meerdere users kan worden toegewezen","Role heeft credentials; User niet","Users zijn read-only; Roles hebben schrijfrechten"],c:[1],h:"Roles = groep van privileges. Wijs de rol 'readonly' toe aan 10 users i.p.v. per user configureren."},
+{type:"mc",q:"Wat doet GRANT in MySQL?",o:["Geeft een gebruiker een tabel","Geeft een gebruiker specifieke privileges op een database, tabel of kolom","Verwijdert privileges","Maakt een gebruiker aan"],c:[1],h:"GRANT SELECT, INSERT ON db.* TO 'user'@'host'; = geef die user die rechten op die database."},
+{type:"mc",q:"Wat doet REVOKE in MySQL?",o:["Geeft privileges","Verwijdert eerder gegeven privileges van een gebruiker","Verwijdert een gebruiker","Maakt een back-up"],c:[1],h:"REVOKE = tegenovergestelde van GRANT. Neem rechten weg van een gebruiker."},
+{type:"mc",q:"Wat is het doel van het 'FLUSH PRIVILEGES' commando?",o:["Wist alle data uit de database","Herlaaidt de privilege-tabellen zodat nieuwe GRANT/REVOKE wijzigingen onmiddellijk actief zijn","Wist de query cache","Herstelt de database"],c:[1],h:"FLUSH PRIVILEGES = herlaad de rechten. Nodig na manuele wijzigingen in de mysql.user tabel."},
+{type:"mc",q:"Wat is het verschil tussen een lokale en een remote MySQL-gebruiker?",o:["Ze zijn identiek","Lokaal: 'user'@'localhost' — enkel lokale verbindingen; Remote: 'user'@'%' of 'user'@'IP' — netwerktoegang toegestaan","Remote gebruikers hebben meer rechten","Lokale gebruikers kunnen niet inloggen"],c:[1],h:"MySQL-users zijn host-specifiek. @'localhost' = enkel lokaal. @'%' = van overal. Beperk dit voor beveiliging."},
+{type:"mc",q:"Wat is een database dump?",o:["Een type back-up van de server","Een export van de databasestructuur en/of data als SQL-commando's — nuttig voor back-up en migratie","Een type query","Een type replicatie"],c:[1],h:"mysqldump = standaard tool voor MySQL back-up. Genereert CREATE en INSERT statements."},
+{type:"open",q:"Welk MySQL-commando gebruik je om te zien welke databases beschikbaar zijn?",ans:["show databases","show databases;"],h:"Het toont alle databases waartoe je toegang hebt."},
+{type:"mc",q:"Wat is het doel van 'USE database_naam' in MySQL?",o:["Maakt een nieuwe database","Selecteert de actieve database zodat volgende queries op die database werken","Verwijdert een database","Maakt een back-up"],c:[1],h:"USE = actieve database instellen. Zonder USE moet je elke keer de databasenaam specificeren."},
+{type:"mc",q:"Wat is de purpose van 'DESCRIBE tabel' in MySQL?",o:["Beschrijft de inhoud van de tabel","Toont de structuur van een tabel: kolomnamen, datatypes, NULL-mogelijkheid, sleutels en defaults","Telt het aantal rijen","Toont de indexen"],c:[1],h:"DESCRIBE (of DESC) = structuurinspectie. Handig om snel te zien hoe een tabel gebouwd is."},
+{type:"mc",q:"Wat doet 'SHOW CREATE TABLE tabel'?",o:["Toont de tabelinhoud","Toont het volledige CREATE TABLE statement inclusief constraints, indexen en opties — nuttig voor back-up en documentatie","Maakt een kopie van de tabel","Toont de tabelstatistieken"],c:[1],h:"SHOW CREATE TABLE = de volledige definitie. Inclusief alle FK's, indexen en engine-instellingen."},
+{type:"mc",q:"Wat is het verschil tussen een numerieke en een tekst-sortering in SQL?",o:["Er is geen verschil","Numeriek: 1 < 2 < 10; Lexicografisch: '1' < '10' < '2' — tekst vergelijkt karakter voor karakter","Tekst sortering is altijd numeriek","Numerieke sortering werkt op tekst"],c:[1],h:"Sla getallen op als INT, niet als VARCHAR. Anders sorteert '10' voor '2' lexicografisch."},
+{type:"mc",q:"Wat is het doel van de IN operator in SQL?",o:["Controleert of een waarde in een bereik valt","Controleert of een waarde overeenkomt met één van de opgegeven waarden in een lijst","Voegt waarden samen","Telt waarden"],c:[1],h:"WHERE land IN ('België', 'Nederland', 'Duitsland') = efficiënter dan drie OR-condities."},
+{type:"mc",q:"Wat doet BETWEEN in SQL?",o:["Berekent het verschil tussen twee waarden","Filtert rijen waarbij een waarde binnen een inclusief bereik valt (a BETWEEN x AND y = a >= x AND a <= y)","Vergelijkt twee tabellen","Combineert twee condities"],c:[1],h:"BETWEEN is inclusief: BETWEEN 10 AND 20 geeft ook 10 en 20 terug."},
+{type:"mc",q:"Wat is een partitioned table in MySQL?",o:["Een tabel verdeeld over meerdere servers","Een tabel opgedeeld in partities op basis van een partitiekey — verbetert queryprestaties en beheerbaarheid bij grote datasets","Een type sharding","Een type view"],c:[1],h:"Partitionering = data verdelen binnen één server. Bijv. partitioneer op jaar voor historische data."},
+{type:"mc",q:"Wat is het verschil tussen CHAR en BINARY in MySQL?",o:["Ze zijn identiek","CHAR vergelijkt hoofdletterongevoelig (afhankelijk van collation); BINARY vergelijkt byte-voor-byte, dus hoofdlettergevoelig","BINARY is voor grote teksten","CHAR is voor binaire data"],c:[1],h:"BINARY = case-sensitive vergelijking. CHAR = afhankelijk van collation (typisch case-insensitive)."},
+{type:"mc",q:"Wat is een temporal table in SQL (systeem-tijdsperiode)?",o:["Een tabel voor tijdelijke data","Een tabel die automatisch de geldigheidsperiode van rijen bijhoudt — queries op een specifiek tijdstip tonen de data zoals ze toen was","Een type tijdelijke tabel","Een type view"],c:[1],h:"Temporal tables = tijdreisende queries. SELECT as of '2024-01-01' toont de staat op die datum."},
+{type:"mc",q:"Wat is een 'sparse index' in databases?",o:["Een index met weinig kolommen","Een index die niet voor elke rij een entry heeft maar enkel voor rijen die de geïndexeerde conditie voldoen — gebruikt in sommige NoSQL-systemen","Een type primary key","Een type samengestelde index"],c:[1],h:"Sparse index = selectief. Enkel items in de index voor rijen die aan een bepaalde voorwaarde voldoen."},
+{type:"mc",q:"Wat is referentiële integriteitsactie ON DELETE CASCADE?",o:["Verbiedt verwijdering als er gerelateerde rijen zijn","Verwijdert automatisch alle gerelateerde rijen via foreign key als de gerefereerde rij verwijderd wordt","Zet de foreign key op NULL","Geeft een foutmelding"],c:[1],h:"CASCADE = verwijdering doorpropageren. Verwijder klant → verwijder automatisch al zijn bestellingen."},
+{type:"mc",q:"Wat is de ON UPDATE SET NULL referentiële actie?",o:["Verhindert updates","Zet de foreign key kolom op NULL als het gerefereerde record geüpdated wordt","Propageert de update","Geeft een foutmelding bij update"],c:[1],h:"SET NULL = ontkoppelen bij update. De foreign key kolom wordt NULL als de gerefereerde sleutel wijzigt."},
+{type:"mc",q:"Wat is het verschil tussen een INNER JOIN en een NATURAL JOIN?",o:["Ze zijn identiek","INNER JOIN vereist een expliciete ON-conditie; NATURAL JOIN joinst automatisch op gelijknamige kolommen — NATURAL JOIN is impliciet en riskant","NATURAL JOIN is veiliger","INNER JOIN is impliciet"],c:[1],h:"NATURAL JOIN is handig maar gevaarlijk bij schema-wijzigingen. Expliciete ON-conditie is robuuster."},
+{type:"mc",q:"Wat is een 'cursor' in een stored procedure?",o:["Een type index","Een database-object dat rij-voor-rij door een resultatenset itereert — nuttig voor complexe rij-per-rij verwerking in stored procedures","Een type view","Een type trigger"],c:[1],h:"Cursor = iterator voor query-resultaten. Gebruik het alleen wanneer SET-gebaseerde operaties niet volstaan."},
+{type:"mc",q:"Wat is het verschil tussen MyISAM en InnoDB in MySQL?",o:["Ze zijn identiek","MyISAM: geen transacties, geen FK's, sneller voor read-heavy; InnoDB: ACID-transacties, FK's, row-level locking","InnoDB is verouderd","MyISAM is de standaard engine"],c:[1],h:"InnoDB = standaard aanbevolen. MyISAM = legacy, gebruikt voor specifieke read-only workloads."},
+{type:"mc",q:"Wat is een 'query cache' in MySQL?",o:["Een type index","Een cache die resultaten van identieke SELECT-queries bijhoudt zodat ze niet opnieuw berekend moeten worden","Een type replicatie","Een type back-up"],c:[1],h:"Query cache = snel hergebruik. Verwijderd in MySQL 8.0 omdat het bij schrijfintensieve workloads een bottleneck werd."},
+{type:"mc",q:"Wat is een 'stored function' in MySQL?",o:["Hetzelfde als een stored procedure","Een herbruikbare functie die een waarde teruggeeft en gebruikt kan worden in SQL-expressies — tegenstelling van procedure die side-effects heeft","Een type trigger","Een type view"],c:[1],h:"Stored function = geeft waarde terug, bruikbaar in SELECT. Stored procedure = voert acties uit."},
+{type:"mc",q:"Wat doet het MySQL commando SHOW INDEX FROM tabel?",o:["Toont de tabelinhoud","Toont alle indexen op een tabel met hun type, kolommen en uniciteitsconstraint","Maakt een nieuwe index aan","Verwijdert indexen"],c:[1],h:"SHOW INDEX = inventariseer indexen. Nuttig voor query-optimalisatie en het vinden van redundante indexen."},
+{type:"mc",q:"Wat is een 'virtual column' of 'generated column' in MySQL?",o:["Een type view-kolom","Een kolom waarvan de waarde automatisch berekend wordt uit andere kolommen — STORED of VIRTUAL","Een type foreign key","Een type trigger"],c:[1],h:"Generated column = berekende waarde. VIRTUAL = berekend on-the-fly; STORED = fysiek opgeslagen."},
+{type:"mc",q:"Wat is het verschil tussen TRUNCATE en DELETE zonder WHERE?",o:["Ze zijn identiek","TRUNCATE is sneller (reset auto_increment, minimale logging); DELETE zonder WHERE verwijdert rij voor rij met volledige logging","DELETE is sneller","TRUNCATE kan niet in een transactie"],c:[1],h:"TRUNCATE = atomische reset, niet rollback-baar. DELETE = trager maar transactioneel en trigerend."},
+{type:"mc",q:"Wat is een 'pivot query' in SQL?",o:["Een type join","Een query die rijen omzet naar kolommen — data herstructureren van lange naar brede formaat","Een type subquery","Een type aggregatie"],c:[1],h:"Pivot = draai de data. Rijen per maand → kolommen per maand in één rij per jaar."},
+{type:"mc",q:"Wat is het doel van 'transaction isolation levels'?",o:["Transacties versleutelen","Bepalen hoe zichtbaar ongemaakte wijzigingen van andere transacties zijn — balans tussen consistentie en concurrency","Transacties versnellen","Transacties back-uppen"],c:[1],h:"Isolation levels: READ UNCOMMITTED, READ COMMITTED, REPEATABLE READ (standaard MySQL), SERIALIZABLE."},
+];
+
+
+// ── CONFIG ──────────────────────────────────────────
+const cfg = {
+  count: sessionStorage.getItem('cfg-count') || '50',
+  order: sessionStorage.getItem('cfg-order') || 'shuffle',
+  types: sessionStorage.getItem('cfg-types') || 'all',
+};
+
+// ── INIT ────────────────────────────────────────────
+const POOL = window.QUESTIONS_databanken || [];
+let questions = [...POOL];
+if (cfg.types !== 'all') questions = questions.filter(q => q.type === cfg.types);
+if (cfg.order === 'shuffle') questions = questions.sort(() => Math.random() - 0.5);
+if (cfg.count !== 'all') questions = questions.slice(0, parseInt(cfg.count));
+
+let idx = 0, correct = 0, wrong = 0, sel = new Set();
+
+function updateStats() {
+  const done = idx, total = questions.length, left = total - done;
+  const pct = done > 0 ? Math.round(correct / done * 100) : null;
+  document.getElementById('sv-score').textContent = correct;
+  document.getElementById('sv-wrong').textContent = wrong;
+  document.getElementById('sv-left').textContent = left;
+  document.getElementById('sv-pct').textContent = pct !== null ? pct + '%' : '—';
+  document.getElementById('prog').style.width = (done / total * 100) + '%';
+  document.getElementById('prog-txt').textContent = `Vraag ${Math.min(idx+1,total)} / ${total}`;
+}
+
+function renderQ() {
+  sel = new Set();
+  const q = questions[idx];
+  const letters = ['A','B','C','D','E','F'];
+
+  let body = '';
+  if (q.type === 'open') {
+    body = `<textarea class="open-inp" id="oa" rows="2" placeholder="Typ je antwoord hier…" oninput="onOI()"></textarea>`;
+  } else {
+    body = `<div class="opts">${q.o.map((o,i) => `<div class="opt" id="o${i}" onclick="tog(${i})"><div class="opt-box" id="b${i}"></div><span class="opt-letter">${letters[i]}</span><span class="opt-text">${o}</span></div>`).join('')}</div>`;
+  }
+
+  const tb = q.type === 'multi' ? `<span class="q-tbadge tb-multi">◈ Meerdere antwoorden</span>`
+           : q.type === 'open'  ? `<span class="q-tbadge tb-open">✏ Open vraag</span>` : '';
+
+  document.getElementById('q-container').innerHTML = `
+    <div class="q-card">
+      <div class="q-meta">
+        <span class="q-num">V${idx+1}</span>
+        <span class="q-sub">${q.t}</span>
+        ${tb}
+      </div>
+      <div class="q-text">${q.q}</div>
+      ${body}
+      <button class="hint-btn" id="hint-btn" onclick="toggleHint()">💡 Hint</button>
+      <div class="hint-box" id="hint-box">${q.h}</div>
+      <div class="feedback" id="fb"></div>
+    </div>`;
+
+  const bc = document.getElementById('btn-check');
+  bc.disabled = true;
+  bc.classList.remove('hidden');
+  document.getElementById('btn-next').classList.add('hidden');
+  document.getElementById('btn-skip').classList.remove('hidden');
+
+  if (q.type === 'open') {
+    document.getElementById('oa').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!bc.disabled) check(); }
+    });
+  }
+}
+
+function onOI() {
+  document.getElementById('btn-check').disabled = !document.getElementById('oa').value.trim();
+}
+
+function toggleHint() {
+  const hb = document.getElementById('hint-box');
+  hb.classList.toggle('show');
+  document.getElementById('hint-btn').textContent = hb.classList.contains('show') ? '💡 Hint verbergen' : '💡 Hint';
+}
+
+function tog(i) {
+  const q = questions[idx];
+  if (document.getElementById('o'+i)?.classList.contains('locked')) return;
+  if (q.type === 'mc') {
+    sel.forEach(s => { document.getElementById('o'+s)?.classList.remove('sel'); const b=document.getElementById('b'+s); if(b) b.innerHTML=''; });
+    sel.clear();
+  }
+  if (sel.has(i)) {
+    sel.delete(i);
+    document.getElementById('o'+i).classList.remove('sel');
+    document.getElementById('b'+i).innerHTML = '';
+  } else {
+    sel.add(i);
+    document.getElementById('o'+i).classList.add('sel');
+    document.getElementById('b'+i).innerHTML = '✓';
+  }
+  document.getElementById('btn-check').disabled = sel.size === 0;
+}
+
+function check() {
+  const q = questions[idx];
+  let ok = false;
+
+  if (q.type === 'open') {
+    const raw = document.getElementById('oa').value.trim().toLowerCase();
+    const acc = (q.ans||[]).map(a=>a.toLowerCase());
+    ok = acc.some(a => raw===a || raw.includes(a) || a.includes(raw));
+    const ta = document.getElementById('oa');
+    ta.classList.add(ok?'ok':'bad');
+    ta.disabled = true;
+  } else {
+    const s=[...sel], cor=q.c;
+    q.o.forEach((_,i)=>document.getElementById('o'+i)?.classList.add('locked'));
+    q.o.forEach((_,i)=>{
+      const el=document.getElementById('o'+i),bx=document.getElementById('b'+i);
+      if(!el) return;
+      el.classList.remove('sel');
+      if(s.includes(i)&&cor.includes(i)){el.classList.add('ok');if(bx)bx.innerHTML='✓';}
+      else if(s.includes(i)&&!cor.includes(i)){el.classList.add('bad');if(bx)bx.innerHTML='✗';}
+      else if(!s.includes(i)&&cor.includes(i)){el.classList.add('missed');if(bx)bx.innerHTML='!';}
+    });
+    ok = cor.every(c=>s.includes(c))&&s.every(sv=>cor.includes(sv));
+  }
+
+  if(ok) correct++; else wrong++;
+  updateStats();
+
+  const fb=document.getElementById('fb');
+  fb.className='feedback show '+(ok?'fb-ok':'fb-bad');
+  fb.innerHTML=(ok?'✅ <strong>Correct!</strong> ':'❌ <strong>Fout.</strong> ')+q.f;
+
+  document.getElementById('btn-check').classList.add('hidden');
+  document.getElementById('btn-skip').classList.add('hidden');
+  const bn=document.getElementById('btn-next');
+  bn.classList.remove('hidden');
+  bn.textContent = idx>=questions.length-1 ? 'Resultaten →' : 'Volgende →';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function skipQ() { wrong++; updateStats(); advance(); }
+function nextQ() { advance(); }
+function advance() {
+  idx++;
+  if(idx>=questions.length){showScore();return;}
+  renderQ();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function showScore() {
+  const total=questions.length, pct=Math.round(correct/total*100);
+  const msg = pct>=85?'🏆 Uitstekend! Je beheerst de leerstof.':pct>=70?'👍 Goed gedaan! Nog wat herhaling.':pct>=55?'📚 Voldoende — extra studie aangeraden.':'💡 Herhaal de cursus en probeer opnieuw.';
+  document.getElementById('quiz-screen').style.display='none';
+  const sc=document.getElementById('score-screen');
+  sc.style.display='block';
+  sc.innerHTML=`
+    <div class="sc-badge">🗄️ Databanken Intro</div>
+    <div class="sc-pct">${pct}%</div>
+    <div class="sc-msg">${msg}</div>
+    <div class="sc-grid">
+      <div class="sc-item"><span class="sc-num" style="color:var(--correct)">${correct}</span><span class="sc-lbl">Correct</span></div>
+      <div class="sc-item"><span class="sc-num" style="color:var(--wrong)">${wrong}</span><span class="sc-lbl">Fout / Over</span></div>
+      <div class="sc-item"><span class="sc-num" style="color:var(--muted2)">${total}</span><span class="sc-lbl">Totaal</span></div>
+    </div>
+    <div class="sc-btns">
+      <a class="btn-home" href="index.html">← Andere module</a>
+      <button class="btn-retry" onclick="location.reload()">↺ Opnieuw</button>
+    </div>`;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// Start
+updateStats();
+renderQ();
+</script>
+</body>
+</html>

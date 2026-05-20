@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📊 Auditing & Monitoring — AP Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07080b;--panel:#0d0f14;--panel2:#141720;
+  --border:#1a1f2e;--border2:#242b3d;
+  --text:#dde3f0;--muted:#4a5568;--muted2:#6b7280;
+  --c:#39ff14;--correct:#22c55e;--wrong:#ef4444;--amber:#ffb800;--purple:#a855f7;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(0,212,255,.05),transparent);pointer-events:none;z-index:0}
+.wrap{max-width:860px;margin:0 auto;padding:28px 20px 80px;position:relative;z-index:1}
+
+/* topbar */
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:28px;flex-wrap:wrap}
+.back{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted2);background:transparent;border:1px solid var(--border2);padding:7px 14px;border-radius:4px;cursor:pointer;text-decoration:none;transition:all .15s;display:inline-block}
+.back:hover{border-color:var(--muted);color:var(--text)}
+.topic-pill{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--c);border:1px solid;border-color:color-mix(in srgb,var(--c) 40%,transparent);background:color-mix(in srgb,var(--c) 8%,transparent);padding:5px 14px;border-radius:3px;margin-left:auto}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--border);border-radius:7px;overflow:hidden;background:var(--panel);margin-bottom:16px}
+.stat{text-align:center;padding:12px 0;border-right:1px solid var(--border)}
+.stat:last-child{border-right:none}
+.sv{font-family:'IBM Plex Mono',monospace;font-size:1.3rem;font-weight:700;line-height:1;display:block}
+.sl{font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-top:3px;display:block}
+.prog-wrap{height:3px;background:var(--border);border-radius:2px;margin-bottom:5px;overflow:hidden}
+.prog{height:100%;background:linear-gradient(90deg,var(--c),color-mix(in srgb,var(--c) 70%,#fff));transition:width .5s ease;width:0;border-radius:2px}
+.prog-txt{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-align:right;margin-bottom:20px}
+
+/* card */
+.q-card{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:32px 36px;margin-bottom:18px;animation:up .3s ease}
+@keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.q-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+.q-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--c);background:color-mix(in srgb,var(--c) 8%,transparent);border:1px solid color-mix(in srgb,var(--c) 25%,transparent);padding:3px 10px;border-radius:2px}
+.q-sub{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted2);background:var(--panel2);border:1px solid var(--border);padding:3px 10px;border-radius:2px}
+.q-tbadge{font-family:'IBM Plex Mono',monospace;font-size:10px;padding:3px 10px;border-radius:2px}
+.tb-multi{color:var(--amber);background:rgba(255,184,0,.07);border:1px solid rgba(255,184,0,.2)}
+.tb-open{color:var(--purple);background:rgba(168,85,247,.07);border:1px solid rgba(168,85,247,.2)}
+.q-text{font-size:1.02rem;font-weight:500;line-height:1.65;margin-bottom:22px}
+
+/* options */
+.opts{display:flex;flex-direction:column;gap:9px}
+.opt{display:flex;align-items:flex-start;gap:13px;padding:12px 16px;border:1px solid var(--border);border-radius:5px;cursor:pointer;transition:border-color .12s,background .12s;background:var(--bg);user-select:none}
+.opt:hover:not(.locked){border-color:var(--c);background:color-mix(in srgb,var(--c) 4%,transparent)}
+.opt.sel{border-color:var(--c);background:color-mix(in srgb,var(--c) 7%,transparent)}
+.opt.ok{border-color:var(--correct);background:rgba(34,197,94,.07)}
+.opt.bad{border-color:var(--wrong);background:rgba(239,68,68,.07)}
+.opt.missed{border-color:var(--amber);background:rgba(255,184,0,.06)}
+.opt-box{width:18px;height:18px;flex-shrink:0;margin-top:2px;border:2px solid var(--border2);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;transition:all .12s}
+.opt.sel .opt-box{border-color:var(--c);background:var(--c);color:var(--bg)}
+.opt.ok .opt-box{border-color:var(--correct);background:var(--correct);color:#fff}
+.opt.bad .opt-box{border-color:var(--wrong);background:var(--wrong);color:#fff}
+.opt.missed .opt-box{border-color:var(--amber);background:var(--amber);color:#000}
+.opt-letter{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:3px;flex-shrink:0}
+.opt-text{font-size:.92rem;line-height:1.5}
+
+/* open */
+.open-inp{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:12px 16px;font-family:'IBM Plex Sans',sans-serif;font-size:.95rem;resize:none;transition:border-color .15s;margin-top:4px}
+.open-inp:focus{outline:none;border-color:var(--c)}
+.open-inp.ok{border-color:var(--correct);background:rgba(34,197,94,.07)}
+.open-inp.bad{border-color:var(--wrong);background:rgba(239,68,68,.07)}
+
+/* hint */
+.hint-btn{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--amber);background:rgba(255,184,0,.07);border:1px solid rgba(255,184,0,.2);padding:6px 14px;border-radius:4px;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px;margin-top:16px}
+.hint-btn:hover{background:rgba(255,184,0,.13)}
+.hint-box{margin-top:10px;padding:12px 16px;background:rgba(255,184,0,.06);border:1px solid rgba(255,184,0,.2);border-radius:5px;font-size:.88rem;line-height:1.6;color:var(--amber);display:none;animation:up .2s ease}
+.hint-box.show{display:block}
+
+/* feedback */
+.feedback{margin-top:18px;padding:13px 18px;border-radius:5px;font-size:.88rem;line-height:1.6;display:none;animation:up .2s ease}
+.feedback.show{display:block}
+.fb-ok{background:rgba(34,197,94,.09);border:1px solid rgba(34,197,94,.3)}
+.fb-bad{background:rgba(239,68,68,.09);border:1px solid rgba(239,68,68,.3)}
+
+/* btns */
+.btn-row{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+.btn{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:1px;text-transform:uppercase;padding:10px 22px;border-radius:4px;cursor:pointer;border:none;transition:all .15s}
+.btn-check{background:var(--c);color:#07080b;font-weight:700}
+.btn-check:hover:not(:disabled){filter:brightness(1.15);transform:translateY(-1px)}
+.btn-check:disabled{background:var(--border);color:var(--muted);cursor:not-allowed;transform:none}
+.btn-next{background:transparent;color:var(--c);border:1px solid var(--c)}
+.btn-next:hover{background:color-mix(in srgb,var(--c) 8%,transparent)}
+.btn-skip{background:transparent;color:var(--muted2);border:1px solid var(--border2)}
+.btn-skip:hover{border-color:var(--muted);color:var(--text)}
+.hidden{display:none!important}
+
+/* score */
+#score-screen{display:none;text-align:center;padding:60px 24px 100px;max-width:680px;margin:0 auto;position:relative;z-index:1}
+.sc-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:4px;text-transform:uppercase;color:var(--c);border:1px solid color-mix(in srgb,var(--c) 30%,transparent);padding:5px 16px;border-radius:2px;display:inline-block;margin-bottom:20px}
+.sc-pct{font-family:'IBM Plex Mono',monospace;font-size:clamp(4rem,12vw,7rem);font-weight:700;line-height:1;margin:16px 0;color:var(--c)}
+.sc-msg{font-size:1.05rem;color:var(--muted2);margin:12px 0 32px}
+.sc-grid{display:flex;justify-content:center;gap:40px;flex-wrap:wrap;margin:24px 0 40px}
+.sc-item{text-align:center}
+.sc-num{font-family:'IBM Plex Mono',monospace;font-size:2rem;font-weight:700;display:block}
+.sc-lbl{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-top:3px;display:block}
+.sc-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn-home{font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:1px;text-transform:uppercase;padding:13px 32px;border-radius:4px;cursor:pointer;font-weight:700;transition:all .15s;background:transparent;color:var(--c);border:1px solid var(--c);text-decoration:none;display:inline-block}
+.btn-home:hover{background:color-mix(in srgb,var(--c) 8%,transparent)}
+.btn-retry{font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:1px;text-transform:uppercase;padding:13px 32px;border-radius:4px;cursor:pointer;font-weight:700;transition:all .15s;border:none;background:var(--c);color:#07080b}
+.btn-retry:hover{filter:brightness(1.15);transform:translateY(-1px)}
+
+@media(max-width:600px){
+  .q-card{padding:20px 18px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .stat:nth-child(2){border-right:none}
+  .stat:nth-child(3){border-right:1px solid var(--border)}
+}
+</style>
+</head>
+<body>
+
+<div id="quiz-screen" class="wrap">
+  <div class="topbar">
+    <a class="back" href="index.html">← Terug</a>
+    <span class="topic-pill">📊 Auditing & Monitoring</span>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><span class="sv" id="sv-score" style="color:var(--correct)">0</span><span class="sl">Correct</span></div>
+    <div class="stat"><span class="sv" id="sv-wrong" style="color:var(--wrong)">0</span><span class="sl">Fout</span></div>
+    <div class="stat"><span class="sv" id="sv-left" style="color:var(--c)">—</span><span class="sl">Resterend</span></div>
+    <div class="stat"><span class="sv" id="sv-pct" style="color:#a855f7">—</span><span class="sl">Score %</span></div>
+  </div>
+  <div class="prog-wrap"><div class="prog" id="prog"></div></div>
+  <div class="prog-txt" id="prog-txt">Vraag 1 / —</div>
+
+  <div id="q-container"></div>
+
+  <div class="btn-row">
+    <button class="btn btn-skip" id="btn-skip" onclick="skipQ()">Sla over</button>
+    <button class="btn btn-check" id="btn-check" disabled onclick="check()">Controleer</button>
+    <button class="btn btn-next hidden" id="btn-next" onclick="nextQ()">Volgende →</button>
+  </div>
+</div>
+
+<div id="score-screen"></div>
+
+<script>
+window.QUESTIONS_auditing = [
+{type:"mc",q:"Wat is het primaire doel van monitoring in een IT-omgeving?",o:["Beveiligingspolicies opstellen","Controleren of alles werkt zoals het hoort te werken","Netwerkapparaten configureren","Logbestanden archiveren"],c:[1],h:"Monitoring is een ONDERSTEUNEND proces — het bewaakt de 'gezondheid' van het netwerk."},
+{type:"mc",q:"Wat is het verschil tussen proactieve en reactieve detectie?",o:["Proactief = na het incident; reactief = voor het incident","Proactief = probleem opgemerkt vóór escalatie; reactief = probleem opgemerkt nadat het geëscaleerd is","Ze zijn identiek","Proactief is altijd beter en reactief is nutteloos"],c:[1],h:"Pro = voor. Het sleutelwoord is: heeft de schade al plaatsgevonden?"},
+{type:"mc",q:"Wat is een 'baseline' in monitoring?",o:["Een minimale drempelwaarde voor alerts","De normale toestand van een systeem waartegen je afwijkingen meet","Een standaard configuratie voor Zabbix","Een back-up van de monitoringconfiguratie"],c:[1],h:"Zonder te weten wat 'normaal' is, weet je niet wat 'abnormaal' is."},
+{type:"mc",q:"Wat is het verschil tussen auditing en monitoring?",o:["Ze zijn identiek","Auditing = periodieke controle gericht op compliance/analyse van het verleden; monitoring = continue realtime observatie van systeemstatus","Monitoring is periodiek; auditing is continu","Auditing is technisch; monitoring is organisatorisch"],c:[1],h:"Tijdshorizon: auditing = periodiek achteraf; monitoring = continu realtime."},
+{type:"open",q:"Hoe noemt men het automatisch ontdekken van apparaten in een netwerk?",ans:["auto-discovery","autodiscovery"],h:"Dit is het automatische alternatief voor manuele inventarisatie."},
+{type:"mc",q:"Welke uitkomst heeft een audit typisch?",o:["Een realtime alert","Een rapport met bevindingen, aanbevelingen en verbeterpunten","Een automatisch herstel van de fout","Een dashboard met live statistieken"],c:[1],h:"Een audit leidt tot een RAPPORT, geen onmiddellijke actie."},
+{type:"multi",q:"Wat kan je monitoren/auditen in een bedrijfsnetwerk? (meerdere antwoorden)",o:["Bedrijfskritische servers","Switches en routers","Werkstations en PCs","Papieren documenten in archief","Netwerkomgeving en uptime"],c:[0,1,2,4],h:"Auditing en monitoring zijn altijd gericht op digitale IT-infrastructuur."},
+{type:"mc",q:"Monitoring is een ... proces.",o:["Periodiek, geplanned","Continu, realtime","Ad hoc, bij problemen","Jaarlijks, compliance-gericht"],c:[1],h:"Monitoring stopt nooit — het is een 24/7 activiteit."},
+{type:"mc",q:"Wat moet je doen als er een fout gedetecteerd wordt?",o:["Alleen loggen en wachten","Weten wat je moet doen en wie je moet verwittigen — en historiek bijhouden","De server herstarten","De monitoring uitschakelen"],c:[1],h:"Detectie zonder actieplan heeft weinig waarde."},
+{type:"mc",q:"Auditing en monitoring zijn ... processen in een IT-organisatie.",o:["Primaire processen die de kern vormen","Ondersteunende processen die kwaliteit en gezondheid van het netwerk waarborgen","Optionele processen voor grote bedrijven","Verplichte processen enkel voor overheidsinstanties"],c:[1],h:"Ze ondersteunen de primaire IT-activiteiten, maar zijn onmisbaar."},
+{type:"mc",q:"Wat is een log entry?",o:["Een configuratiebestand","Een door een programma genoteerde/gemelde gebeurtenis met timestamp","Een beveiligingsregel","Een back-up van systeeminstellingen"],c:[1],h:"Logging = het bijhouden van een digitaal logboek van gebeurtenissen."},
+{type:"multi",q:"Welke severity levels worden in de cursus vermeld voor log entries? (meerdere antwoorden)",o:["Error","Warning","Informational","Debug","Critical","Emergency"],c:[0,1,2,3],h:"De cursus beschrijft vier niveaus. Critical en Emergency komen voor in syslog maar werden niet als de vier hoofdniveaus vermeld."},
+{type:"mc",q:"Wat is een 'Error' severity level in logging?",o:["Geen probleem, ter info","Allicht niet ok maar alles werkt nog","Er is een probleem","Gedetailleerde developer-informatie"],c:[2],h:"Error = er IS een probleem, niet alleen een waarschuwing."},
+{type:"mc",q:"Waarom wil je 'Debug' logs meestal niet bijhouden in productie?",o:["Ze zijn te groot voor de harde schijf","Ze bevatten gevoelige bedrijfsdata","Ze genereren enorm veel data en zijn bedoeld voor ontwikkelaars","Ze zijn versleuteld en onleesbaar"],c:[2],h:"Debug logs zijn zeer gedetailleerd — nuttig voor ontwikkelaars, maar niet in productie."},
+{type:"mc",q:"Wat is logrotate en waarvoor dient het?",o:["Een tool om log-entries te analyseren","Een Linux-tool die logbestanden roteert en beheert om te vermijden dat ze oneindig groot worden","Een syslog-server voor centrale logging","Een dashboardtool voor log-visualisatie"],c:[1],h:"Zonder rotatie zouden logfiles eindeloos groeien en de disk volmaken."},
+{type:"mc",q:"Wat is syslog?",o:["Een Windows-specifiek loggingsysteem","Het standaard loggingsysteem voor Unix/Linux en netwerkapparaten, ook beschikbaar op Windows via plugins","Een database voor het opslaan van logs","Een monitoringtool zoals Zabbix"],c:[1],h:"Syslog is de open standaard voor logging op Unix/Linux én netwerkapparaten."},
+{type:"multi",q:"Welke elementen onderscheidt men in syslog? (meerdere antwoorden)",o:["Device (verstuurt syslog-berichten)","Collector (ontvangt en slaat op)","Relay (ontvangt en doorstuurt zonder opslag)","Parser (analyseert de berichten)","Visualizer (toont grafieken)"],c:[0,1,2],h:"De drie functionele rollen in syslog zijn: versturend, ontvangend en doorstuurend."},
+{type:"open",q:"Welke drie loggingsystemen worden in de cursus vermeld? (geef er één)",ans:["syslog","systemd journal","windows events","windows event log"],h:"De drie systemen zijn respectievelijk voor netwerkapparaten/Linux, moderne Linux, en Windows."},
+{type:"mc",q:"Waar bevinden zich typische Linux logfiles?",o:["/etc/logs/","C:\\Windows\\Logs","var/log/ (bijv. /var/log/messages, /var/log/secure)","C:\\ProgramData\\Logs"],c:[2],h:"Linux gebruikt /var als locatie voor variabele data, waaronder logs."},
+{type:"mc",q:"Wat is centralized logging en waarom is het nuttig?",o:["Logging enkel op lokale machines","Het doorsturen van logs van alle apparaten naar één centrale syslog-collector voor overzicht en analyse","Het versleutelen van logs","Het automatisch verwijderen van logs na 30 dagen"],c:[1],h:"Centralisatie = alles op één plek. Makkelijker analyseren, correleren en beveiligen."},
+{type:"mc",q:"Welke velden bevat een typische logfile entry? (meerdere aanwezig)",o:["Alleen de boodschap","Timestamp en message (en eventueel severity, username, IP, PID, session-id)","Enkel het IP-adres","Alleen de severity"],c:[1],h:"Minimaal heb je tijd en boodschap. Alles extra geeft meer context."},
+{type:"mc",q:"Wat is Zabbix?",o:["Een commercieel monitoringplatform van Microsoft","Een open-source enterprise monitoringsysteem voor netwerken, servers en applicaties","Een syslog-server","Een SNMP-manager"],c:[1],h:"Zabbix is open-source en enterprise-grade — twee kenmerken die zelden samengaan."},
+{type:"mc",q:"Wat is een 'item' in Zabbix?",o:["Een monitoringmelding (alert)","Een meting of te verzamelen datapunt van een host (bijv. CPU-belasting, vrije schijfruimte)","Een logische conditie die alerts triggert","Een grafiek of dashboard"],c:[1],h:"Items zijn de fundamentele bouwstenen: ze METEN iets op een host."},
+{type:"mc",q:"Wat is een 'trigger' in Zabbix?",o:["Een item dat data verzamelt","Een logische expressie die bepaalt wanneer een probleem aanwezig is op basis van item-data","Een grafiek die statistieken toont","Een sjabloon voor hergebruik"],c:[1],h:"Triggers EVALUEREN de data van items en bepalen of er een probleem is."},
+{type:"multi",q:"Welke waarden kan een Zabbix trigger hebben? (meerdere antwoorden)",o:["OK","PROBLEM","WARNING","CRITICAL","UNKNOWN"],c:[0,1],h:"Een Zabbix trigger heeft twee basiszustanden — zoals een binaire waarde."},
+{type:"mc",q:"Wat is een 'host' in Zabbix?",o:["Een monitoringserver waarop Zabbix draait","Een willekeurig netwerkapparaat of systeem dat gemonitord wordt (server, switch, router, PC...)","Een Zabbix-agent","Een template"],c:[1],h:"In Zabbix = alles wat gemonitord wordt is een 'host'."},
+{type:"mc",q:"Wat is een Zabbix template?",o:["Een rapport-layout","Een verzameling van items, triggers, grafieken en discovery rules die hergebruikt kunnen worden door meerdere hosts","Een e-mailsjabloon voor alerts","Een standaard configuratiebestand"],c:[1],h:"Templates = hergebruik. Koppel één template aan meerdere hosts in plaats van alles manueel in te voeren."},
+{type:"mc",q:"Wat is 'template inheritance' in Zabbix?",o:["Een template overschrijft alle instellingen van de host","Templates kunnen andere templates bevatten, wat modulaire monitoring mogelijk maakt","Hosts erven automatisch alle templates van hun groep","Templates worden automatisch bijgewerkt door Zabbix"],c:[1],h:"Inheritance = overerving. Een Windows template kan bijv. een ICMP-template en CPU-template bevatten."},
+{type:"mc",q:"Wat is Low Level Discovery (LLD) in Zabbix?",o:["Een methode om handmatig items aan te maken voor elk apparaat","Een feature die automatisch items aanmaakt op basis van wat ontdekt wordt (bijv. 8 disks → 8 disk monitoring items)","Een type trigger voor kritieke problemen","Een grafiek die het netwerk visualiseert"],c:[1],h:"LLD = automatische detectie én aanmaak van items. Geen manuele configuratie nodig."},
+{type:"multi",q:"Wat kan Low Level Discovery automatisch ontdekken? (meerdere antwoorden)",o:["Filesystemen","Netwerkinterfaces","CPUs en CPU-cores","SNMP OIDs","Windows services","Gebruikers en wachtwoorden"],c:[0,1,2,3,4],h:"LLD kan alles ontdekken behalve beveiligde gegevens zoals wachtwoorden."},
+{type:"mc",q:"Waarom zijn templates onmisbaar in grote monitoringomgevingen?",o:["Ze maken Zabbix sneller","Ze vermijden dubbel werk, fouten en gebrek aan standaardisatie bij het monitoren van duizenden systemen","Ze zijn verplicht door de Zabbix-licentie","Ze vervangen de Zabbix-agent"],c:[1],h:"Stel je voor: 1000 servers manueel configureren. Templates lossen dit op."},
+{type:"mc",q:"Wat is een 'threshold' in een trigger-expressie?",o:["De minimale uptime van een server","De grenswaarde die bepaalt of de data van een item aanvaardbaar is of niet","De maximale response time van Zabbix","De frequentie waarmee items worden uitgelezen"],c:[1],h:"Boven of onder de threshold = probleem. Binnen de threshold = OK."},
+{type:"mc",q:"Wat is 'trigger dependency' in Zabbix?",o:["Twee triggers die altijd samen activeren","Een relatie waarbij een afhankelijke trigger niet in PROBLEM gaat als de parent-trigger al actief is — voorkomt alert flooding","Een trigger die afhangt van een externe API","Triggers die aan templates gekoppeld zijn"],c:[1],h:"Dependencies voorkomen dat je 10 meldingen krijgt als één root-oorzaak 10 problemen veroorzaakt."},
+{type:"open",q:"Hoe heet het fenomeen waarbij een groot aantal meldingen wordt gegenereerd door één onderliggend probleem?",ans:["alert flooding","alert storm"],h:"Het wordt 'flooding' genoemd omdat je overspoeld wordt met meldingen."},
+{type:"mc",q:"Wat is hysteresis bij triggers?",o:["Een buffer die pakketten bijhoudt","Een interval tussen de OK en PROBLEM status zodat kortstondige pieken geen valse meldingen genereren","Een type aggregatiefunctie","Een methode voor automatische recovery"],c:[1],h:"Zonder hysteresis: een server die continu rond 20°C schommelt triggert constant aan en uit."},
+{type:"mc",q:"Welke trigger severity heeft de kleur 'Orange' in Zabbix?",o:["High","Warning","Average","Disaster"],c:[2],h:"Average = gemiddeld probleem = oranje. High = rood, Warning = geel."},
+{type:"multi",q:"Welke trigger severities kent Zabbix? (meerdere antwoorden)",o:["Not classified","Information","Warning","Average","High","Disaster"],c:[0,1,2,3,4,5],h:"Zabbix heeft zes severity levels van grijs (Not classified) tot donkerrood (Disaster)."},
+{type:"mc",q:"Wat is een 'action' in Zabbix?",o:["Een manuele herstelactie van de beheerder","Een automatische reactie op een trigger-event (bijv. e-mail sturen, script uitvoeren, remote command)","Een grafiek die een incident visualiseert","Een rapport dat na een audit gegenereerd wordt"],c:[1],h:"Actions = automatiseer de reactie op problemen. Geen manuele tussenkomst nodig."},
+{type:"mc",q:"Wanneer gaat een trigger van PROBLEM naar OK?",o:["Nooit automatisch","Wanneer de trigger-expressie opnieuw als 'normaal' evalueert (of de recovery expression voldaan is)","Alleen na manuele bevestiging","Na een vaste tijdsperiode"],c:[1],h:"Triggers zijn dynamisch: ze evalueren continu en wisselen tussen OK en PROBLEM."},
+{type:"mc",q:"Wat is een 'item prototype' in Zabbix LLD?",o:["Een template voor items","Een item-definitie die automatisch instanciëert voor elk ontdekt element (bijv. voor elke disk)","Een oud item dat niet meer gebruikt wordt","Een back-up van een item"],c:[1],h:"Prototype = blauwdruk. LLD gebruikt prototypes om items te genereren per ontdekt element."},
+{type:"mc",q:"Hoe importeer je een template in Zabbix?",o:["Via Data collection → Hosts → Import","Via Data collection → Templates → Import (YAML/XML bestand)","Via Administration → General → Import","Via Monitoring → Import"],c:[1],h:"Templates worden beheerd onder Data collection → Templates."},
+{type:"open",q:"Waarvoor staat SNMP?",ans:["simple network management protocol"],h:"Het is een protocol voor het beheren en monitoren van netwerkapparaten."},
+{type:"mc",q:"Welke poort gebruikt SNMP voor queries (Zabbix bevraagt de agent)?",o:["TCP 161","UDP 161","UDP 162","TCP 162"],c:[1],h:"SNMP gebruikt UDP, niet TCP. Queries gaan naar poort 161."},
+{type:"mc",q:"Welke poort gebruikt SNMP voor traps?",o:["UDP 161","TCP 161","UDP 162","TCP 162"],c:[2],h:"Traps zijn ONVERWACHTE meldingen van de agent naar de manager — andere poort dan queries."},
+{type:"mc",q:"Wat is het verschil tussen een SNMP Manager en een SNMP Agent?",o:["Ze zijn identiek","Manager = vraagt informatie op of ontvangt traps; Agent = softwarecomponent op het apparaat dat antwoorden geeft","Manager = ontvangt; Agent = verstuurt managers","Manager zit op het apparaat; Agent is de monitoringserver"],c:[1],h:"Manager = Zabbix server. Agent = de software op bijv. de switch."},
+{type:"mc",q:"Wat is een SNMP trap?",o:["Een beveiligingsval voor hackers","Een ongeplande/onverwachte melding van een SNMP-agent naar de manager bij een specifieke gebeurtenis (bijv. interface down)","Een periodieke polling-cyclus","Een SNMP-query voor CPU-belasting"],c:[1],h:"Trap = de agent meldt zelf iets, zonder dat de manager erom vroeg."},
+{type:"mc",q:"Wat is een MIB in SNMP?",o:["Management Interface Bus","Management Information Base — een hiërarchische datastructuur die alle beschikbare SNMP-variabelen van een apparaat beschrijft","Module Installation Base","Monitoring Index Backup"],c:[1],h:"MIB = de 'catalogus' van alle dingen die je via SNMP kunt opvragen."},
+{type:"mc",q:"Waarom is SNMP voordelig voor netwerkapparaten?",o:["Het versleutelt alle communicatie","Het vereist geen aparte software-agent (firmware-geïntegreerd), schaalt goed en verbruikt weinig bandbreedte","Het biedt betere security dan de Zabbix-agent","Het is sneller dan alle andere protocollen"],c:[1],h:"SNMP = agentless voor netwerkhardware. De agent zit al ingebouwd in de firmware."},
+{type:"mc",q:"Wat is het verschil tussen SNMP en de Zabbix agent qua benadering?",o:["Er is geen verschil","SNMP = agentless (ingebouwde firmware-agent); Zabbix agent = aparte te installeren software, biedt meer mogelijkheden voor servers","Zabbix agent = agentless; SNMP vereist aparte software","SNMP werkt alleen op Linux; Zabbix agent op Windows"],c:[1],h:"SNMP: geen installatie nodig. Zabbix agent: meer functionaliteit maar moet geïnstalleerd worden."},
+{type:"open",q:"Hoe heet het SNMP-concept waarbij je gegevens opvraagt van een specifiek apparaat?",ans:["get","snmp get","snmpget"],h:"Het basiscommando voor het opvragen van informatie in SNMP."},
+{type:"multi",q:"Welke apparaten worden typisch via SNMP gemonitord? (meerdere antwoorden)",o:["Routers","Switches","Servers","Printers","UPS-systemen","Laptops zonder SNMP-agent"],c:[0,1,2,3,4],h:"Alles met een ingebouwde SNMP-agent kan via SNMP gemonitord worden."},
+{type:"mc",q:"Wat is een 'map' in Zabbix?",o:["Een geoportal voor netwerkmonitoring","Een visuele representatie van de netwerkinfrastructuur met de status van hosts en verbindingen","Een standaard Zabbix-rapport","Een type trigger"],c:[1],h:"Maps = topologie-visualisatie. Je ziet in één oogopslag welke hosts in PROBLEM staan."},
+{type:"mc",q:"Wat is het voordeel van Grafana ten opzichte van de ingebouwde Zabbix-dashboards?",o:["Grafana is volledig gratis; Zabbix niet","Grafana biedt geavanceerdere visualisaties en kan meerdere databronnen combineren","Grafana is eenvoudiger te configureren","Grafana vervangt Zabbix volledig"],c:[1],h:"Grafana is een dedicated visualisatietool — veel krachtiger voor dashboards dan Zabbix's native UI."},
+{type:"mc",q:"Wat is een 'discovery rule' in Zabbix?",o:["Een regel die hosts automatisch toevoegt aan Zabbix","Een LLD-configuratie die bepaalt wat automatisch ontdekt moet worden op een host","Een firewall-regel voor Zabbix-verkeer","Een autorisatieregel voor Zabbix-gebruikers"],c:[1],h:"Discovery rules sturen het LLD-proces: wat moet Zabbix zoeken en automatisch aanmaken?"},
+{type:"mc",q:"Wat is 'polling interval' in Zabbix?",o:["De tijd tussen twee Zabbix-installaties","De frequentie waarmee Zabbix de data van een item uitvraagt","De tijd die Zabbix nodig heeft om te starten","De backup-frequentie van de Zabbix-database"],c:[1],h:"Polling = actief vragen. Interval = hoe vaak. Lager interval = meer detail, meer load."},
+{type:"mc",q:"Wat is een 'web scenario' in Zabbix?",o:["Een monitoringstool voor webservers","Een reeks HTTP-stappen die Zabbix uitvoert om de beschikbaarheid en prestaties van webapplicaties te testen","Een visualisatie van webverkeer","Een template voor webserver-monitoring"],c:[1],h:"Web scenarios = actieve HTTP-monitoring. Zabbix simuleert gebruikersgedrag op een website."},
+{type:"mc",q:"Wat is 'active monitoring' vs 'passive monitoring' in Zabbix?",o:["Active = Zabbix vraagt data; Passive = de agent pusht data","Active = de agent vraagt welke items Zabbix wil en stuurt data; Passive = Zabbix vraagt items op bij de agent","Ze zijn identiek","Active is voor servers; Passive voor netwerkapparaten"],c:[1],h:"Bij Active monitoring initieert de AGENT de communicatie; bij Passive de ZABBIX SERVER."},
+{type:"mc",q:"Hoe exporteer je een probleem/rapport uit Zabbix?",o:["Via de CLI","Via Monitoring → Problems en exporteer naar PDF/CSV","Via Data collection → Export","Via Administration → Reports"],c:[1],h:"Problemen zijn zichtbaar onder het Monitoring-menu."},
+{type:"mc",q:"Wat is 'availability monitoring' in Zabbix?",o:["Monitoren of een service draait","Het monitoren van de beschikbaarheid van hosts via ICMP ping of TCP-poort checks","Het analyseren van beschikbaarheidsrapporten","Het bewaken van schijfruimte"],c:[1],h:"Beschikbaarheid = is het systeem bereikbaar? ICMP ping is de eenvoudigste methode."},
+{type:"mc",q:"Wat meet het item 'system.cpu.util[,system,avg1]' in Zabbix?",o:["De CPU-temperatuur","De CPU-belasting gemiddeld over één minuut","Het geheugengebruik","De netwerkdoorvoer"],c:[1],h:"system = kernel CPU tijd; avg1 = gemiddelde over 1 minuut."},
+{type:"mc",q:"Wat is een 'Zabbix proxy'?",o:["Een type firewall voor Zabbix","Een tussenschakel die monitoring-data verzamelt voor een Zabbix server, nuttig voor gedistribueerde netwerken","Een back-upserver voor Zabbix","Een visualisatietool"],c:[1],h:"Proxy = data lokaal verzamelen en sturen naar de centrale server. Nuttig voor remote locaties."},
+{type:"mc",q:"Welke Windows-tool gebruik je om lokale beveiligingsgebeurtenissen (aanmeldingen, beleidswijzigingen) te auditen?",o:["Task Manager","Event Viewer — met name de Security log","Device Manager","Performance Monitor"],c:[1],h:"Event Viewer > Windows Logs > Security bevat alle beveiligingsgerelateerde events."},
+{type:"mc",q:"Wat is de Windows Event Log?",o:["Een syslog-equivalent voor Windows die applicatie-, systeem- en beveiligingsgebeurtenissen bijhoudt","Een Linux logbestand op Windows","Een database van Zabbix","Een SNMP-trap collector"],c:[1],h:"Windows heeft zijn eigen logging-systeem met categorieën: Application, System, Security, Setup."},
+{type:"mc",q:"Hoe bekijk je logberichten van systemd-services op Linux?",o:["cat /var/log/syslog","journalctl — het commando voor de systemd journal","dmesg","tail /var/log/messages"],c:[1],h:"systemd journal = journalctl. Niet te verwarren met de klassieke syslog."},
+{type:"mc",q:"Wat is 'log forwarding' in een enterprise-omgeving?",o:["Logs verwijderen na een bepaalde tijd","Logs van apparaten doorsturen naar een centrale syslog-server voor gecentraliseerde opslag en analyse","Logs versleutelen voor transport","Logs comprimeren voor opslag"],c:[1],h:"Forwarding = doorsturen. Centrale server = één plek voor alle logs."},
+{type:"mc",q:"Wat zijn de securitygroepen die worden aangemaakt bij DHCP-installatie op Windows Server?",o:["DHCP Admins en DHCP Users","DHCP Users en DHCP Administrators","DHCP Managers en DHCP Clients","DHCP Servers en DHCP Clients"],c:[1],h:"'DHCP Users' voor read-only toegang en 'DHCP Administrators' voor volledige controle."},
+{type:"mc",q:"Welk commando gebruik je in Linux om recente systeemfouten te bekijken in de kernel ring buffer?",o:["journalctl","dmesg","cat /var/log/messages","tail /var/log/syslog"],c:[1],h:"dmesg = diagnose messages. Toont kernel-gerelateerde berichten."},
+{type:"mc",q:"Wat is het verschil tussen /var/log/messages en /var/log/secure op Linux?",o:["Ze zijn identiek","/var/log/messages bevat algemene systeemberichten; /var/log/secure bevat authenticatie- en beveiligingsgerelateerde berichten","secure is versleuteld; messages niet","messages is alleen voor root; secure voor alle gebruikers"],c:[1],h:"Separate is beter voor monitoring: security-events gescheiden van algemene events."},
+{type:"mc",q:"Wat is een SIEM-systeem?",o:["Een type firewall","Security Information and Event Management — verzamelt en correleert logs uit meerdere bronnen voor beveiligingsanalyse","Een back-up systeem","Een monitoringtool zoals Zabbix"],c:[1],h:"SIEM = de centrale hub voor security-logs. Detecteert patronen over meerdere systemen heen."},
+{type:"mc",q:"Wat is log retention policy?",o:["Het beleid voor het verwijderen van onnodige logs","Het beleid dat bepaalt hoe lang logs bewaard worden, rekening houdend met compliance-vereisten","Het automatisch roteren van logbestanden","Het comprimeren van logs voor opslag"],c:[1],h:"Hoe lang bewaar je logs? GDPR en andere wetgeving kunnen hier eisen aan stellen."},
+{type:"multi",q:"Welke informatie kan een audit log bevatten? (meerdere antwoorden)",o:["Wie (username)","Wat (actie uitgevoerd)","Wanneer (timestamp)","Waarom (motivatie van de gebruiker)","Waarvandaan (IP-adres/systeem)"],c:[0,1,2,4],h:"Audit logs registreren feiten, niet motivaties. 'Waarom' is niet te loggen."},
+{type:"mc",q:"Een server heeft een uitvaltijd van 2 uur zonder dat de beheerder het weet. Wat ontbrak er?",o:["Een backup","Proactieve monitoring met availability checks en alerts","Een firewall","Een DRP"],c:[1],h:"Proactief monitoring + alert had de beheerder onmiddellijk gewaarschuwd."},
+{type:"mc",q:"Zabbix geeft 50 alerts tegelijk wanneer één kernswitch uitvalt. Hoe los je dit op?",o:["Meer RAM toevoegen aan de Zabbix server","Trigger dependencies configureren zodat afhankelijke hosts niet in PROBLEM gaan als de kernswitch al in PROBLEM staat","Alle triggers verwijderen","Het polling interval verhogen"],c:[1],h:"50 alerts voor één oorzaak = alert flooding. Dependencies tonen alleen het root-probleem."},
+{type:"mc",q:"Je wil de temperatuur van een serverruimte monitoren. Wanneer boven 20°C gaat de trigger in PROBLEM; hij moet in OK pas als hij onder 15°C daalt. Welk concept pas je toe?",o:["Trigger dependency","Trigger severity","Hysteresis — met aparte problem expression (>20°C) en recovery expression (<15°C)","Low Level Discovery"],c:[2],h:"Hysteresis = twee verschillende drempelwaarden voor probleem en herstel."},
+{type:"mc",q:"Een nieuwe server heeft 12 schijven. Je wil elk automatisch gemonitord hebben. Welke Zabbix-feature gebruik je?",o:["Manueel 12 items aanmaken","Low Level Discovery met filesystem discovery","Een template met 12 hardcoded items","Een SNMP trap per schijf"],c:[1],h:"LLD ontdekt automatisch hoeveel schijven er zijn en maakt de items aan."},
+{type:"mc",q:"Je wil één monitoringconfiguratie gebruiken voor 200 Windows servers. Hoe pak je dit aan?",o:["Elk server manueel configureren","Een 'Windows by Zabbix agent' template koppelen aan alle 200 hosts","Een script schrijven dat de configuratie kopieert","SNMP gebruiken in plaats van een template"],c:[1],h:"Templates = eenmalig configureren, hergebruiken voor alle hosts."},
+{type:"mc",q:"Een trigger geeft continu valse meldingen omdat de CPU kort boven de 80% gaat tijdens normale back-ups. Hoe los je dit op?",o:["De trigger verwijderen","Hysteresis instellen of de trigger aanpassen met een tijdsconditie (bijv. 5 minuten aanhoudend boven 80%)","Het polling interval verhogen","De back-upserver uitschakelen"],c:[1],h:"Kortdurende pieken zijn normaal. Triggers moeten aanhoudende problemen detecteren, niet piekjes."},
+{type:"mc",q:"Je wil vanuit Zabbix een e-mail sturen als een server neer is. Welke Zabbix-functionaliteit configureer je?",o:["Een extra trigger","Een action met een notificatie-operatie gekoppeld aan de trigger","Een extra item","Een discovery rule"],c:[1],h:"Actions = de reactie op trigger-events. Een actie kan e-mails, SMS, scripts triggeren."},
+{type:"mc",q:"PFSENSE is neer. Door trigger dependencies staan 'internettoegang' en 'learning.ap.be' in OK. Wat is het voordeel?",o:["Er worden minder alerts gegenereerd, maar je mist informatie","Je ziet alleen het ROOT-probleem (PFSENSE neer) zonder te worden overspoeld door gevolg-alerts — efficiënter probleemoplossen","Alle triggers worden uitgeschakeld","Je krijgt meer informatie"],c:[1],h:"Dependencies filteren ruis: enkel de oorzaak is zichtbaar, niet alle gevolgen."},
+{type:"mc",q:"Welk SNMP-commando stuur je om een waarde op te vragen van een apparaat op 192.168.1.1?",o:["snmpset","snmpget -v2c -c public 192.168.1.1 OID","snmptrap","snmpwalk (om alle waarden te zien)"],c:[1],h:"snmpget = een specifieke OID opvragen. snmpwalk = alle OIDs doorlopen."},
+{type:"mc",q:"Wat is een 'network map' in Zabbix?",o:["Een gedetailleerde routeringstabel","Een visuele topologiekaart van het netwerk met kleurgecodeerde statusindicatoren per host","Een lijst van alle gemonitorde hosts","Een grafiek van netwerkverkeer"],c:[1],h:"Groen = OK, rood = PROBLEM — in één oogopslag zie je de netwerktoestand."},
+{type:"open",q:"Welk protocol stuurt Zabbix-berichten van de agent naar de server bij actieve monitoring?",ans:["zabbix protocol","tcp","zabbix trapper"],h:"Actieve agents initiëren de verbinding via TCP naar de Zabbix server."},
+{type:"mc",q:"Wat is het verschil tussen een Zabbix graph en een Zabbix screen?",o:["Graphs zijn voor SNMP; screens voor agents","Een graph toont één of meerdere items over tijd; een screen combineert meerdere grafieken, maps en triggers in één overzicht","Screens zijn verouderd in Zabbix 7","Graphs zijn altijd realtime; screens zijn historisch"],c:[1],h:"Screens/Dashboards = composite view. Graphs = tijdreeksvisualisatie van specifieke items."},
+{type:"mc",q:"Welk item-type gebruik je in Zabbix om een eenvoudige ICMP ping te testen?",o:["Zabbix agent","SNMP agent","Simple check (icmpping)","External check"],c:[2],h:"Simple checks zijn ingebouwd in Zabbix en vereisen geen agent."},
+{type:"mc",q:"Wat is het belang van een 'maintenance window' in Zabbix?",o:["Een periode waarin Zabbix updates uitvoert","Een periode waarin alerts onderdrukt worden voor geplande onderhoudswerkzaamheden aan een host","Een back-upvenster voor de Zabbix-database","Een periode voor het uitvoeren van LLD"],c:[1],h:"Onderhoud = je weet dat de server neer zal zijn. Maintenance window = geen valse alerts."},
+{type:"mc",q:"Wat is 'trend' data vs 'history' data in Zabbix?",o:["Ze zijn identiek","History = ruwe gedetailleerde metingen; Trend = geaggregeerde uurgemiddelden voor langetermijnopslag (minder opslagruimte)","Trend is realtime; History is historisch","History is voor agents; Trend voor SNMP"],c:[1],h:"Trends aggregeren data om opslagruimte te besparen terwijl langetermijnpatronen zichtbaar blijven."},
+{type:"multi",q:"Welke componenten kan een Zabbix template bevatten? (meerdere antwoorden)",o:["Items","Triggers","Graphs","Discovery rules","Dashboards","Web scenarios"],c:[0,1,2,3,4,5],h:"Een template kan alle zes componenten bevatten — dat is het krachtige ervan."},
+{type:"mc",q:"Hoe noemt men het proces waarbij Zabbix periodiek de waarde van een item opvraagt?",o:["Trapping","Polling","Flooding","Scanning"],c:[1],h:"Polling = actief op regelmatige tijdstippen vragen om data."},
+{type:"mc",q:"Wat is het verschil tussen monitoring en observability?",o:["Ze zijn identiek","Monitoring = weten of iets werkt (metrics, alerts); Observability = begrijpen WAAROM iets niet werkt (metrics + logs + traces)","Observability is verouderd","Monitoring is technisch; observability is organisatorisch"],c:[1],h:"Observability is de evolutie van monitoring: niet alleen WAT maar ook WAAROM."},
+{type:"open",q:"Welk bestand bevat de rotatieconfiguratie van logbestanden op Linux?",ans:["/etc/logrotate.conf","logrotate.conf"],h:"De configuratie staat in /etc/ — de standaardlocatie voor systeemconfiguraties."},
+{type:"mc",q:"Wat is een NMS (Network Management System)?",o:["Een type firewall","Een systeem voor het centraal beheren en monitoren van netwerkapparaten, vaak via SNMP","Een DNS-server","Een syslog-collector"],c:[1],h:"NMS = het centrale systeem dat al je netwerkapparaten in de gaten houdt."},
+{type:"mc",q:"Wat is een 'expression' in een Zabbix trigger?",o:["Een formule om grafieken te genereren","Een logische conditie die evalueert of item-waarden een probleem vormen, bijv. last(/host/cpu.util)>80","Een type item","Een type actie"],c:[1],h:"Expressions bepalen WANNEER een trigger PROBLEM wordt. Ze combineren functies en drempelwaarden."},
+{type:"mc",q:"Wat is de functie 'last()' in een Zabbix trigger-expressie?",o:["De gemiddelde waarde","De meest recente waarde van een item","De maximale waarde","De minimale waarde"],c:[1],h:"last() = de laatste gemeten waarde. avg() voor gemiddelde, max() voor maximum."},
+{type:"mc",q:"Wat is de functie 'avg()' in een Zabbix trigger-expressie?",o:["De laatste waarde","Het gemiddelde van waarden over een tijdspanne","De maximale waarde","De minimale waarde"],c:[1],h:"avg(/host/item,5m) = gemiddelde over de laatste 5 minuten."},
+{type:"open",q:"Hoe heet de Zabbix-functie die controleert of een item een bepaalde waarde bevat of niet beschikbaar is?",ans:["nodata","nodata()"],h:"Deze functie gaat in PROBLEM als er geen data ontvangen is gedurende een opgegeven tijd."},
+{type:"mc",q:"Wat is een Zabbix dashboard?",o:["Een type rapport","Een aanpasbaar overzichtsscherm met widgets (grafieken, kaarten, probleemlijsten) voor realtime monitoring","Een type trigger","Een type template"],c:[1],h:"Dashboard = jouw persoonlijk monitoring-overzicht. Stel het samen met de widgets die jij nodig hebt."},
+{type:"mc",q:"Wat is het verschil tussen Zabbix items van type 'Zabbix agent (passive)' en 'Zabbix agent (active)'?",o:["Ze zijn identiek","Passive: Zabbix server vraagt data op bij de agent; Active: de agent vraagt aan de server welke items gewenst zijn en stuurt ze zelf","Active is veiliger","Passive vereist meer bandbreedte"],c:[1],h:"Passive = pull (server haalt). Active = push (agent stuurt). Active is beter achter firewalls."},
+{type:"multi",q:"Welke notification-kanalen ondersteunt Zabbix voor acties? (meerdere antwoorden)",o:["E-mail","SMS","Slack/Teams (via webhooks)","Telegram","Pushbericht"],c:[0,1,2,3,4],h:"Zabbix ondersteunt alle vijf via media types. Webhooks maken verbinding met elk modern kanaal."},
+{type:"mc",q:"Wat is de purpose van een Zabbix host group?",o:["Een back-upgroep","Een logische groepering van hosts voor organisatie, filtering en het toepassen van rechten","Een type template","Een type trigger"],c:[1],h:"Host groups = organiseer je inventaris. Bijv. 'Windows Servers', 'Cisco Switches', 'AP-Servers'."},
+{type:"mc",q:"Wat doet het Zabbix item 'net.if.in[eth0]'?",o:["Controleert of interface eth0 actief is","Meet de inkomende bytes/seconde op interface eth0","Meet de latency op eth0","Toont het IP-adres van eth0"],c:[1],h:"net.if.in = inkomend netwerkverkeer op de interface. net.if.out voor uitgaand."},
+{type:"mc",q:"Wat is het belang van de 'trigger severity' bij alerting?",o:["Ze beïnvloeden de monitoring interval","Ze bepalen de prioriteit voor afhandeling en kunnen verschillende escalatiepaden en meldingen triggeren","Ze hebben geen invloed op acties","Ze wijzigen de kleur van grafieken"],c:[1],h:"Severity = ernst. Disaster-triggers wekken iemand 's nachts; Information-triggers niet."},
+{type:"mc",q:"Wat is 'Zabbix preprocessing'?",o:["Het voorbereiden van templates","Het transformeren van ruwe itemdata voor opslag, bijv. JSON-parsing, regex-extractie, unit-conversies","Het filteren van triggers","Het configureren van discovery rules"],c:[1],h:"Preprocessing = verwerk de data voor je hem opslaat. Bijv. extraheer één waarde uit een JSON-respons."},
+{type:"mc",q:"Wat is een calculated item in Zabbix?",o:["Een item dat door LLD aangemaakt wordt","Een item waarvan de waarde berekend wordt uit andere items via een formule","Een item voor externe scripts","Een item voor SNMP-data"],c:[1],h:"Calculated items = afgeleide metrics. Bijv. beschikbaar geheugen = totaal - used."},
+{type:"mc",q:"Wat is een dependent item in Zabbix?",o:["Een item met trigger dependencies","Een item dat zijn waarde haalt uit een master item — spaart bandbreedte door één call meerdere waarden te laten leveren","Een item dat afhangt van LLD","Een item voor externe monitoring"],c:[1],h:"Dependent items = één API-call, meerdere items. Master fetcht de data; dependents parsen er onderdelen uit."},
+{type:"mc",q:"Hoe implementeer je monitoring van een HTTP endpoint in Zabbix?",o:["Via SNMP","Via een HTTP agent item of een web scenario","Via de Zabbix agent","Via een calculated item"],c:[1],h:"HTTP agent = REST API calls monitoren. Web scenario = volledige gebruikersflow testen."},
+{type:"mc",q:"Wat is een OID in SNMP?",o:["Een type IP-adres","Object Identifier — een uniek hiërarchisch adres voor een specifieke variabele in de MIB","Een type community string","Een type SNMP-versie"],c:[1],h:"OID = het adres van een SNMP-variabele. bijv. 1.3.6.1.2.1.1.1.0 = sysDescr (systeembeschrijving)."},
+{type:"mc",q:"Wat is een SNMP community string?",o:["Een type wachtwoord","Een onversleuteld gedeeld 'wachtwoord' voor SNMP v1/v2c — 'public' voor read, 'private' voor write","Een type OID","Een type trap"],c:[1],h:"Community string = gedeeld geheim voor SNMP. 'public' is de standaard — verander dit altijd!"},
+{type:"mc",q:"Waarom is SNMP v3 veiliger dan v1/v2c?",o:["Het is sneller","SNMP v3 biedt authenticatie (wachtwoord) en encryptie — v1/v2c gebruiken onversleutelde community strings","Het ondersteunt meer OIDs","Het is eenvoudiger te configureren"],c:[1],h:"SNMPv3 = authPriv modus. AuthNoPriv = authenticatie zonder encryptie. Gebruik altijd v3 waar mogelijk."},
+{type:"mc",q:"Wat is SNMP polling interval en wat is de invloed op de SNMP-agent?",o:["Heeft geen invloed","Hoe korter het interval, hoe vaker de agent bevraagd wordt — meer CPU/load op het apparaat","Kortere interval = minder bandbreedte","Longer interval = minder accurate data maar geen load"],c:[1],h:"Elke query = CPU-verbruik op het apparaat. Vind de balans tussen granulariteit en load."},
+{type:"mc",q:"Wat is een Zabbix host inventory?",o:["Een lijst van alle items","Metadata over een host (type, OS, locatie, serienummer) opgeslagen in Zabbix voor documentatie","Een type template","Een type discovery"],c:[1],h:"Host inventory = documentatie in Zabbix. Wie heeft dit toestel? Waar staat het? Welk OS?"},
+{type:"mc",q:"Wat is de 'Zabbix sender'?",o:["De e-mailclient van Zabbix","Een tool/daemon die data naar Zabbix server stuurt via het trapper-protocol — voor externe scripts en applicaties","Een type agent","Een type proxy"],c:[1],h:"Zabbix sender = push data vanuit scripts. Bijv. een back-up script dat zijn status naar Zabbix stuurt."},
+{type:"mc",q:"Wat is het verschil tussen een Zabbix graph en een Grafana graph?",o:["Ze zijn identiek","Zabbix graphs zijn functioneel maar beperkt; Grafana graphs zijn rijker, flexibeler en kunnen meerdere databronnen combineren","Grafana is minder nauwkeurig","Zabbix graphs zijn sneller"],c:[1],h:"Grafana = de visualisatiespecialist. Zabbix = de datacollector. Ze werken uitstekend samen."},
+{type:"open",q:"Welk bestand configureer je op de Zabbix agent om aan te geven naar welke server de agent actief zijn data stuurt?",ans:["zabbix_agentd.conf","zabbix_agent2.conf","zabbix_agentd.conf of zabbix_agent2.conf"],h:"De configuratiebestanden staan in /etc/zabbix/ op Linux."},
+{type:"mc",q:"Wat is 'escalation' in Zabbix actions?",o:["Het verhogen van trigger severity","Het automatisch escaleren van alerts na een tijdsverloop als een probleem niet opgelost is — stuur eerst naar L1, dan naar manager","Een type trigger","Een type template"],c:[1],h:"Escalation = als na X minuten het probleem niet opgelost is, stuur ook een bericht naar de volgende persoon."},
+{type:"mc",q:"Wat is het doel van 'maintenance' in Zabbix?",o:["Een periode voor Zabbix updates","Een geconfigureerde tijdsperiode waarin alerts voor een host onderdrukt worden om valse meldingen tijdens gepland onderhoud te vermijden","Een type back-up","Een type template"],c:[1],h:"Maintenance window = vertel Zabbix wanneer je het systeem bewust neerhaalt. Geen valse alarmen."},
+{type:"mc",q:"Wat is distributed monitoring in Zabbix?",o:["Monitoring van gedistribueerde applicaties","Een architectuur met Zabbix proxies die lokaal data verzamelen voor remote locaties en doorzenden naar de centrale Zabbix server","Een type LLD","Een type template"],c:[1],h:"Proxies voor remote sites = minder WAN-verkeer, lokale buffering als WAN-verbinding wegvalt."},
+{type:"mc",q:"Hoe beveilig je de Zabbix web-interface?",o:["Er zijn geen beveiligingsopties","Via HTTPS, sterke wachtwoorden, IP-whitelisting, MFA en regelmatige updates van Zabbix","Enkel via een sterk wachtwoord","Via SNMP v3"],c:[1],h:"Beveilig de beheersconsole: HTTPS, MFA, toegangsbeperking per IP. De console heeft admin-macht."},
+{type:"mc",q:"Wat is de 'Zabbix database' en welke databases worden ondersteund?",o:["Enkel MySQL","De database voor opslag van configuratie, historische data en trends — ondersteunt MySQL, PostgreSQL, Oracle","Enkel PostgreSQL","SQLite voor kleine installaties"],c:[1],h:"MySQL en PostgreSQL zijn het meest gebruikt. PostgreSQL voor grote omgevingen (TimescaleDB)."},
+{type:"mc",q:"Wat is TimescaleDB in de context van Zabbix?",o:["Een apart monitoringsysteem","Een tijdreeksdatabase-extensie op PostgreSQL die Zabbix historische data efficiënter opslaat en querysnelheid verbetert","Een type grafiek","Een type export"],c:[1],h:"TimescaleDB = geoptimaliseerd voor tijdreeksdata. Verbetert Zabbix performantie bij grote volumes."},
+{type:"mc",q:"Wat is het belang van housekeeper in Zabbix?",o:["Een beheerder van de Zabbix-server","Een interne Zabbix-dienst die automatisch oude historische data en trends opruimt om de database beheersbaar te houden","Een type back-up","Een type monitoring"],c:[1],h:"Housekeeper = automatische opruiming. Zonder housekeeper groeit de database oneindig."},
+{type:"mc",q:"Welk protocol gebruikt Zabbix standaard voor communicatie tussen agent en server?",o:["HTTPS","TCP poort 10050 (passive) / 10051 (active)","UDP 161","TCP 443"],c:[1],h:"Poort 10050 = passive agent (server vraagt op). Poort 10051 = active agent (agent stuurt naar server)."},
+{type:"mc",q:"Wat is het verschil tussen 'Problems' en 'Events' in Zabbix?",o:["Ze zijn identiek","Events = alle trigger-statuswijzigingen; Problems = actieve events die nog niet opgelost zijn","Problems zijn historisch; Events zijn actueel","Events zijn enkel voor informatie"],c:[1],h:"Events = logboek van alle wijzigingen. Problems = gefilterde view: wat is NU actief."},
+{type:"mc",q:"Wat is 'cause and symptoms' in Zabbix problem analyse?",o:["Een type trigger","De oorzaak-gevolg relatie waarbij één probleem (oorzaak) meerdere andere problemen (symptomen) triggert — zichtbaar via trigger dependencies","Een type actie","Een type template"],c:[1],h:"Oorzaak: PFSENSE neer. Symptomen: internet weg, learning.ap.be niet bereikbaar. Dependencies tonen dit correct."},
+{type:"mc",q:"Wat is een Zabbix 'screen' (dashboard element)?",o:["Het volledig scherm van Zabbix","Een widget op een dashboard dat een grafiek, map, probleemlijst of ander element toont","Een type rapport","Een type alert"],c:[1],h:"Screens/widgets = bouwstenen van je dashboard. Combineer grafieken, maps en probleemoverzichten."},
+{type:"mc",q:"Wat is SLA monitoring in Zabbix?",o:["Het monitoren van service level agreements","Het bijhouden van de beschikbaarheid van services als percentage om SLA-compliance aan te tonen","Een type trigger","Een type actie"],c:[1],h:"SLA monitoring = bewijs van beschikbaarheid. Was de server 99,9% beschikbaar? Zabbix SLA-rapporten tonen dit."},
+{type:"mc",q:"Waarom is logrotate belangrijk voor een Zabbix-installatie?",o:["Zabbix heeft geen logs","Zabbix-logbestanden kunnen snel groeien — logrotate voorkomt dat de schijf volraakt","Logrotate versnelt Zabbix","Logrotate back-upt de Zabbix-database"],c:[1],h:"Grote logfiles = disk full = Zabbix stopt. Logrotate comprimeert en verwijdert oude logs automatisch."},
+{type:"mc",q:"Wat is de 'Zabbix API'?",o:["Een interne database","Een JSON-RPC API waarmee externe tools, scripts en applicaties kunnen communiceren met Zabbix voor configuratie en data-opvraging","Een type agent","Een type proxy"],c:[1],h:"Zabbix API = automatiseer alles. Hosts aanmaken, triggers aanpassen, data opvragen via scripts."},
+{type:"mc",q:"Wat is een 'trigger prototype' in LLD?",o:["Een standaard trigger","Een trigger-definitie die LLD gebruikt als blauwdruk om automatisch triggers aan te maken voor elk ontdekt element","Een type template","Een type actie"],c:[1],h:"Net als item prototype, maar dan voor triggers. LLD maakt automatisch een trigger per ontdekte schijf."},
+{type:"mc",q:"Hoe exporteer je een host-configuratie uit Zabbix voor back-up of overdracht?",o:["Via de command line","Via Data collection → Hosts → selecteer host → Export als YAML of XML","Via de database","Via de Zabbix agent"],c:[1],h:"Export/Import = configuratie-back-up of overdracht naar andere Zabbix-installatie."},
+{type:"mc",q:"Wat is het voordeel van 'event correlation' in Zabbix?",o:["Snellere monitoring","Het automatisch sluiten van gerelateerde problemen wanneer een root-cause probleem opgelost wordt","Het samenvoegen van triggers","Het verminderen van item data"],c:[1],h:"Event correlation = één 'OK' voor de root-oorzaak = automatisch OK voor alle afhankelijke problemen."},
+{type:"mc",q:"Wat is 'agentless monitoring' in Zabbix?",o:["Monitoring zonder Zabbix-installatie","Monitoring via SNMP, ICMP, HTTP, SSH of andere protocollen zonder Zabbix-agent op het doelwit","Monitoring via een proxy","Monitoring via LLD"],c:[1],h:"Agentless = geen installatie nodig op het doelwit. Nuttig voor netwerkapparaten, printers, UPS."},
+{type:"mc",q:"Wat is het maximum aantal items dat Zabbix per host kan monitoren?",o:["100","1000","Er is geen hard limiet — afhankelijk van de hardware en databaseperformantie","10000"],c:[2],h:"Geen harde limiet, maar elke item kost resources. Goed geoptimaliseerde Zabbix-servers monitoren miljoenen items."},
+{type:"mc",q:"Wat is remote command execution in Zabbix?",o:["Een type aanval","Een actie waarbij Zabbix automatisch een commando uitvoert op een host als reactie op een trigger — voor automatisch herstel","Een type monitoring","Een type template"],c:[1],h:"Remote commands = automatisch herstel. Trigger: disk vol → actie: verwijder temp-bestanden."},
+{type:"mc",q:"Wat is een 'tag' in Zabbix?",o:["Een type trigger","Een label (key-value paar) dat aan hosts, items of triggers gekoppeld kan worden voor filtering en correlatie","Een type template","Een type actie"],c:[1],h:"Tags = metadata voor filtering. Bijv. 'environment:production' of 'application:nginx'. Handig voor grote omgevingen."},
+{type:"mc",q:"Wat is de relatie tussen een Zabbix item en een trigger?",o:["Ze zijn identiek","Een item verzamelt data; een trigger evalueert die data om te bepalen of er een probleem is","Een trigger verzamelt data; een item evalueert","Ze zijn onafhankelijk"],c:[1],h:"Item = data verzamelen. Trigger = die data beoordelen. Actie = reageren op de trigger-status."},
+{type:"mc",q:"Wat is application monitoring in Zabbix?",o:["Het monitoren van applicaties voor HR-doeleinden","Het monitoren van de beschikbaarheid en performantie van applicaties via specifieke items (bijv. processcontrole, HTTP-checks)","Een type SNMP-monitoring","Een type LLD"],c:[1],h:"Applicatiemonitoring = is de service actief? Geeft het de juiste antwoorden? Hoe snel?"},
+{type:"open",q:"Welk Zabbix item type gebruik je om externe scripts te integreren die data aanleveren via stdin?",ans:["external check","zabbix external check"],h:"External checks = Zabbix roept een extern script op en gebruikt de output als itemwaarde."},
+{type:"mc",q:"Wat is het doel van 'history storage period' in Zabbix?",o:["Hoelang Zabbix historische ruwe data bewaart per item — korter = minder opslagruimte","Hoelang trending data bewaard wordt","Hoelang triggers actief blijven","Hoelang events bewaard worden"],c:[0],h:"History = ruwe gedetailleerde metingen. Trend = geaggregeerde data. History is kostbaar qua opslag."},
+{type:"mc",q:"Wat is het verschil tussen 'polling' en 'trapping' in Zabbix data collection?",o:["Ze zijn identiek","Polling = Zabbix haalt actief data op bij de agent/apparaat; trapping = data wordt naar Zabbix gepusht door de bron","Trapping is minder betrouwbaar","Polling is altijd sneller"],c:[1],h:"Polling = pull (Zabbix vraagt). Trapping = push (bron stuurt). SNMP traps zijn een voorbeeld van trapping."},
+{type:"mc",q:"Wat is 'bulk data collection' in Zabbix SNMP?",o:["Het verzamelen van data van meerdere SNMP-agents tegelijk","Het opvragen van meerdere OIDs in één SNMP-request via GetBulk — efficiënter dan individuele Gets","Een type LLD","Een type SNMP trap"],c:[1],h:"SNMP GetBulk = meerdere OIDs per request. Minder round-trips = betere performantie."},
+{type:"mc",q:"Hoe voeg je een nieuwe host toe in Zabbix?",o:["Via de command line enkel","Via Data collection → Hosts → Create host: geef naam, interfaces, templates en host groups op","Via het SNMP-protocol","Via de Zabbix agent"],c:[1],h:"In de web-UI: Data collection → Hosts → Create host. Of via de API voor bulk aanmaak."},
+{type:"mc",q:"Wat is 'auto-registration' in Zabbix?",o:["Automatisch aanmaken van items","Een feature waarbij Zabbix agents die voor het eerst verbinden automatisch worden geregistreerd als hosts","Een type LLD","Een type template"],c:[1],h:"Auto-registration = zero-touch provisioning. Nieuwe server met agent opgestart → automatisch in Zabbix."},
+{type:"mc",q:"Wat is een 'Zabbix sender item' (type: Zabbix trapper)?",o:["Een item dat SNMP-data verwerkt","Een item dat wacht op data gepusht via zabbix_sender of de API — nuttig voor externe applicaties en cronjobs","Een calculated item","Een HTTP agent item"],c:[1],h:"Trapper items = receptors voor gepushte data. Script genereert een waarde → stuurt het naar Zabbix."},
+{type:"mc",q:"Wat is de beste aanpak voor het monitoren van 1000 identieke Windows servers in Zabbix?",o:["Elke server manueel configureren","Één 'Windows by Zabbix agent' template aanmaken/importeren en koppelen aan alle 1000 hosts","Per server een apart template","Via SNMP enkel"],c:[1],h:"Templates = schaalbaarheid. Één aanpassing → automatisch bijgewerkt op alle 1000 servers."},
+{type:"mc",q:"Welk item gebruik je om de uptime van een server te meten in Zabbix?",o:["system.cpu.util","system.uptime","net.if.in","proc.num"],c:[1],h:"system.uptime geeft de uptime in seconden. Nuttig om te detecteren als een server onverwacht herstart."},
+{type:"mc",q:"Wat is een 'graph prototype' in LLD?",o:["Een standaard grafiek","Een grafiekdefinitie die LLD gebruikt als blauwdruk om automatisch grafieken aan te maken voor elk ontdekt element","Een type template","Een type calculated item"],c:[1],h:"Graph prototype = blauwdruk voor automatisch aangemaakte grafieken. Bijv. één grafiek per ontdekte interface."},
+{type:"mc",q:"Wat is het verschil tussen een Zabbix template linked aan een host en een template dat aan een ander template gelinkt is?",o:["Er is geen verschil","Template gekoppeld aan host = items actief op die host; template in template = inherited, modulaire opbouw","Template in template geeft meer prioriteit","Nested templates zijn verboden"],c:[1],h:"Templates kunnen andere templates 'bevatten'. Bijv. OS-Linux template bevat ICMP-check template."},
+{type:"mc",q:"Wat is 'problem escalation' in Zabbix?",o:["Het verhogen van trigger severity","Het automatisch verhogen van de severity of het informeren van extra personen als een probleem niet opgelost wordt na een bepaalde tijd","Een type trigger","Een type item"],c:[1],h:"Escalation = als L1 niet reageert, alarmeer L2 of management. Geautomatiseerd in Zabbix actions."},
+{type:"mc",q:"Wat is het doel van 'item value mapping' in Zabbix?",o:["Het omzetten van eenheden","Het vertalen van ruwe numerieke waarden naar begrijpelijke tekst, bijv. 0=Down, 1=Up","Een type berekening","Een type preprocessing"],c:[1],h:"Value mapping = leesbare labels. In plaats van '0' zie je 'Down' — duidelijker voor beheerders."},
+{type:"mc",q:"Wat is een Zabbix 'host prototype' in LLD?",o:["Een sjabloon voor hosts","Een host-definitie die LLD gebruikt om automatisch hosts aan te maken voor elk ontdekt element (bijv. VM per hypervisor)","Een type template","Een type discovery"],c:[1],h:"Host prototypes = automatisch hosts aanmaken. Bijv. een VMware-discovery maakt automatisch een host per VM."},
+{type:"open",q:"Welk commando gebruik je om de Zabbix agent service te herstarten op Linux?",ans:["systemctl restart zabbix-agent","systemctl restart zabbix-agent2","service zabbix-agent restart"],h:"Gebruik systemctl voor moderne Linux-distributies met systemd."},
+{type:"mc",q:"Wat is het verschil tussen Zabbix agent en Zabbix agent 2?",o:["Ze zijn identiek","Zabbix agent 2 is een complete herschrijving in Go met betere prestaties, meer plugins en active checks","Zabbix agent 2 is verouderd","Zabbix agent ondersteunt meer platforms"],c:[1],h:"Agent 2 = nieuwe generatie. Meer plugins, betere performance, geschreven in Go."},
+{type:"mc",q:"Wat is monitoring by exception?",o:["Enkel fouten monitoren","Het enkel genereren van alerts wanneer afgeweken wordt van de verwachte baseline — normale operatie genereert geen meldingen","Een type logging","Een type audit"],c:[1],h:"By exception = alleen alarmeren als iets afwijkt. Voorkomen dat je overspoeld wordt met normale status-updates."},
+{type:"mc",q:"Wat is de relatie tussen een item en een graph in Zabbix?",o:["Graphs zijn items","Een graph visualiseert de historische waarden van één of meerdere items over tijd","Items worden berekend vanuit graphs","Ze zijn onafhankelijk"],c:[1],h:"Items = data. Graphs = visualisatie van die data. Geen items = geen grafiekdata."},
+{type:"mc",q:"Wat is 'Zabbix get' en waarvoor gebruik je het?",o:["Een type API-call","Een command-line tool om handmatig een item-waarde op te vragen bij een Zabbix agent — nuttig voor debugging","Een type SNMP-commando","Een type actie"],c:[1],h:"zabbix_get -s host -k item.key = test of een item correct werkt zonder Zabbix-server nodig."},
+{type:"mc",q:"Wat is het verschil tussen availability en performance monitoring?",o:["Ze zijn identiek","Availability = is het systeem beschikbaar/bereikbaar?; Performance = hoe goed presteert het? (CPU, memory, responstijd)","Performance monitoring is onmogelijk in Zabbix","Availability monitoring vereist SNMP"],c:[1],h:"Beide zijn nodig: een server kan beschikbaar maar te traag zijn. Of onbereikbaar maar intern actief."},
+{type:"mc",q:"Wat is een 'reporting' functie in Zabbix?",o:["Automatische probleemoplossing","Het genereren van rapporten over beschikbaarheid, SLA-naleving en incidentstatistieken","Een type trigger","Een type dashboard"],c:[1],h:"Rapporten = management-info. Toont uptime, SLA-naleving, topprobleem-hosts."},
+{type:"mc",q:"Wat is 'discovery action' in Zabbix?",o:["Een LLD-discovery rule","Een actie die automatisch wordt uitgevoerd wanneer een nieuw apparaat via network discovery ontdekt wordt (bijv. host toevoegen, template koppelen)","Een type trigger","Een type item"],c:[1],h:"Discovery action = automatisch onboarden. Nieuw apparaat gevonden → automatisch configureren in Zabbix."},
+{type:"mc",q:"Wat is de 'Zabbix server log' en waar vind je die?",o:["Een type event log","Het logbestand van de Zabbix-serverdienst zelf (/var/log/zabbix/zabbix_server.log) — essentieel voor probleemoplossing","Een type database log","Een type auditlog"],c:[1],h:"Zabbix server log = de 'motor-log' van Zabbix. Bij problemen altijd hier beginnen."},
+{type:"mc",q:"Wat is een 'media type' in Zabbix?",o:["Een type item","De configuratie van een notificatiekanaal (e-mail, SMS, Slack-webhook) die gebruikt wordt door acties","Een type template","Een type trigger"],c:[1],h:"Media types definiëren HOE Zabbix notificaties verstuurt. Acties bepalen WANNEER."},
+{type:"mc",q:"Wat is 'problem acknowledgement' in Zabbix?",o:["Het automatisch sluiten van problemen","De mogelijkheid voor een beheerder om te bevestigen dat hij een probleem opgemerkt heeft, optioneel met commentaar","Een type trigger","Een type maintenance"],c:[1],h:"Acknowledge = ik ben dit aan het oplossen. Stopt herhaling van alerts en informeert collega's."},
+{type:"mc",q:"Wat is 'trend prediction' in Zabbix?",o:["Een type ML-functie","Een functie die op basis van historische trends voorspelt wanneer een item een drempelwaarde zal bereiken","Een type trigger","Een type grafiek"],c:[1],h:"Prediction = proactief zijn. Bijv. 'schijf vol over 3 dagen' — actie ondernemen voor het probleem optreedt."},
+{type:"mc",q:"Wat is het doel van 'items interval' in Zabbix?",o:["Hoe lang een item bewaard wordt","De frequentie waarmee Zabbix de waarde van een item opvraagt — balans tussen granulariteit en serverload","De maximale waarde van een item","De minimale waarde die een trigger activeert"],c:[1],h:"Item interval = update frequency. 30s voor kritieke servers, 5m voor minder kritieke informatie."},
+{type:"mc",q:"Wat is een 'Zabbix super admin'?",o:["Een beheerder van de Zabbix-server hardware","De hoogste rechtenrol in Zabbix met onbeperkte toegang tot alle configuraties en data","Een type template","Een type actie"],c:[1],h:"Super admin = god-mode in Zabbix. Kan alles configureren, alle data zien, alle rechten toewijzen."},
+{type:"mc",q:"Wat is IPMI monitoring in Zabbix?",o:["Een type internet protocol monitoring","Monitoring via de IPMI interface van servers (board management controller) voor hardware-status buiten het OS","Een type SNMP monitoring","Een type agentloze monitoring"],c:[1],h:"IPMI = hardware management. Werkt zelfs als het OS offline is. Monitor temperatuur, fan, voeding."},
+{type:"mc",q:"Waarom is het belangrijk om de Zabbix-database regelmatig te back-uppen?",o:["De database bevat enkel configuraties","De database bevat ALLE configuraties, historische data en trends — verlies hiervan betekent verlies van al je monitoring-opzet en history","Back-ups zijn niet nodig voor monitoring","Zabbix heeft ingebouwde back-up"],c:[1],h:"Zabbix DB = alles. Configuraties, trends, history, users. Back-up = continuïteit van je monitoring."},
+{type:"mc",q:"Wat is het verschil tussen 'passive' en 'active' checks in SNMP context?",o:["SNMP heeft geen active checks","SNMP heeft enkel passive checks (polling door Zabbix server) en traps (actief van agent naar server)","SNMP active checks zijn standaard","SNMP passive checks zijn traps"],c:[1],h:"SNMP polling = Zabbix vraagt periodiek. SNMP traps = apparaat stuurt zelf bij een event."},
+{type:"mc",q:"Wat is 'Zabbix housekeeping'?",o:["Manueel opruimen van data","Een automatisch intern Zabbix-proces dat regelmatig oude history, trends en events opruimt op basis van ingestelde retentieperiodes","Een type back-up","Een type import"],c:[1],h:"Housekeeper = automaitsche opruiming. Configuurbaar via Zabbix GUI: hoelang history/trends bewaren?"},
+{type:"mc",q:"Wat is de purpose van de Zabbix 'Audit log'?",o:["Systeemfouten bijhouden","Het bijhouden van alle configuratiewijzigingen in Zabbix (wie heeft wat gewijzigd en wanneer) voor accountability","Een type performance log","Een type discovery log"],c:[1],h:"Audit log = accountability. Wie heeft die trigger gewijzigd? Wanneer? Via de audit log weet je het."},
+{type:"mc",q:"Wat doet het Zabbix item 'proc.num[httpd]'?",o:["Meet de CPU-belasting van httpd","Telt het aantal draaiende processen met de naam 'httpd'","Controleert of httpd luistert op poort 80","Geeft de geheugengebruik van httpd"],c:[1],h:"proc.num = tel processen. Nuttig om te detecteren of een service actief is en hoeveel instanties draaien."},
+{type:"mc",q:"Wat is een 'network discovery rule' in Zabbix?",o:["Een LLD-rule voor interfaces","Een regel die Zabbix instrueert om periodiek een IP-bereik te scannen op actieve hosts en diensten","Een type host prototype","Een type SNMP-OID"],c:[1],h:"Network discovery = automatisch nieuwe apparaten vinden. Scan bereik → voeg gevonden hosts toe."},
+{type:"mc",q:"Wat is het verschil tussen proactive en reactive monitoring?",o:["Ze zijn identiek","Proactief = probleem gedetecteerd voor impact op gebruikers; reactief = gebruiker meldt probleem aan IT","Reactief is beter","Proactief is duurder maar minder effectief"],c:[1],h:"Proactief monitoring = IT weet het voor de gebruiker. Reactief = gebruiker ontdekt het probleem."},
+{type:"mc",q:"Wat is 'item key' in Zabbix?",o:["Een type primary key in de database","De unieke identificator van een item (bijv. system.cpu.util[,user]) die aangeeft welke data verzameld wordt","Een type SNMP-OID","Een type macro"],c:[1],h:"Item key = het adres van de te meten waarde. Zabbix-agent of SNMP-OID bepaalt wat opgehaald wordt."},
+{type:"mc",q:"Wat is 'SNMP walk' en wanneer gebruik je het?",o:["Een type SNMP trap","Het opvragen van alle OIDs onder een bepaalde OID in de MIB-boom — nuttig bij het verkennen van een onbekend apparaat","Een type polling-interval","Een type discovery"],c:[1],h:"SNMP walk = verken alle beschikbare OIDs. Gebruik het om te ontdekken wat een apparaat aanbiedt."},
+{type:"mc",q:"Wat is een Zabbix 'trigger expression' met 'count()' functie?",o:["Telt het aantal triggers","Telt hoe vaak een item een bepaalde waarde had in een tijdsvenster — bijv. hoe vaak CPU > 90% was in de laatste 10 min","Berekent een gemiddelde","Geeft de laatste waarde"],c:[1],h:"count(/host/item,10m,\"gt\",\"90\") = hoe vaak was de waarde groter dan 90 in de laatste 10 minuten?"},
+{type:"mc",q:"Wat is de purpose van Zabbix 'user roles'?",o:["Groeperen van hosts","Bepalen welke delen van de Zabbix-interface en welke acties beschikbaar zijn voor verschillende gebruikersrollen","Een type template","Een type actie"],c:[1],h:"User roles = RBAC in Zabbix. Niet elke beheerder heeft alles nodig — beperk toegang per rol."},
+{type:"mc",q:"Wat is een 'Zabbix module'?",o:["Een type plugin","Een uitbreidingscomponent die de Zabbix-webinterface kan uitbreiden met extra functionaliteit of integraties","Een type template","Een type actie"],c:[1],h:"Modules = extensies voor de Zabbix UI. Bijv. een module die integratie toevoegt met een ticketingsysteem."},
+{type:"mc",q:"Wat is het verschil tussen een 'global trigger' en een 'template trigger' in Zabbix?",o:["Ze zijn identiek","Template trigger = gedefinieerd in een template, overgenomen door alle gekoppelde hosts; Er zijn geen 'global triggers' per se","Global triggers gelden voor alle hosts","Template triggers zijn enkel voor LLD"],c:[1],h:"Triggers leven in templates of direct op hosts. Via templates schaal je naar alle gekoppelde hosts."},
+{type:"mc",q:"Welk item type gebruik je om een JMX-waarde van een Java applicatie te monitoren in Zabbix?",o:["SNMP","HTTP agent","JMX item — via Zabbix Java gateway","Calculated item"],c:[2],h:"JMX = Java Management Extensions. Zabbix Java Gateway vertaalt JMX-requests voor de Zabbix server."},
+{type:"mc",q:"Wat is een 'Zabbix service' in de context van SLA-monitoring?",o:["De Zabbix-serverdienst zelf","Een logische service-entiteit in Zabbix die hosts en triggers groepeert voor SLA-berekening en rapportage","Een type template","Een type actie"],c:[1],h:"Services in Zabbix = IT-diensten die SLA's hebben. Bijv. 'E-mailservice' bestaande uit meerdere hosts."},
+{type:"mc",q:"Wat is het doel van 'linked templates' op een host?",o:["Dupliceert het host","Kopieert alle items, triggers en grafieken van het template naar de host zodat die automatisch gemonitord worden","Geeft de host toegang tot het template","Maakt de host een slave van het template"],c:[1],h:"Template linken = items/triggers actief op de host. Ontkoppelen verwijdert alle template-items."},
+{type:"mc",q:"Wat is 'Zabbix preprocessing: regular expression'?",o:["Een type trigger-expressie","Een preprocessing-stap die via regex een deel uit de ruwe itemdata extraheert — bijv. de status-code uit een HTTP-respons","Een type discovery filter","Een type actie"],c:[1],h:"Regex preprocessing = extract wat je nodig hebt. Bijv. extraheer de CPU-waarde uit een multi-line output."},
+{type:"mc",q:"Wat is het verschil tussen monitoring en observability?",o:["Ze zijn identiek","Monitoring = weten of iets werkt (metrics); Observability = begrijpen WAAROM iets niet werkt (metrics + logs + traces)","Observability is verouderd","Monitoring is technisch; observability is organisatorisch"],c:[1],h:"Observability = drie pijlers: Metrics (wat), Logs (wanneer/wat), Traces (hoe/waarom). Breder dan monitoring."},
+{type:"mc",q:"Wat is OpenTelemetry in relatie tot monitoring?",o:["Een type Zabbix plugin","Een vendor-neutrale standaard voor het verzamelen van observability-data (metrics, logs, traces) uit applicaties","Een type SNMP-variant","Een type alertingsysteem"],c:[1],h:"OpenTelemetry = standaard instrumentatie. Één manier om data te verzamelen voor elk monitoring-platform."},
+{type:"mc",q:"Wat is de purpose van een 'Zabbix proxy' in een grootschalige omgeving?",o:["Back-up van de Zabbix server","Een tussenschakel die data verzamelt voor een deel van het netwerk en doorstuurt — verlaagt load op de centrale server","Een type agent","Een type template"],c:[1],h:"Proxy = gedistribueerde monitoring. Elke remote site heeft een proxy die lokaal data verzamelt."},
+{type:"mc",q:"Wat is 'SNMP v3 authPriv'?",o:["SNMP zonder authenticatie","SNMP v3 modus met zowel authenticatie (wachtwoord) als encryptie (AES/DES) — de veiligste SNMP-configuratie","SNMP met enkel authenticatie","SNMP zonder encryptie"],c:[1],h:"authPriv = maximale beveiliging voor SNMP. Auth = wie ben je? Priv = niemand kan meelezen."},
+{type:"mc",q:"Wat is het doel van 'Zabbix history storage compression'?",o:["Snellere queries","Het comprimeren van historische data in de database om opslagruimte te besparen — bijv. via TimescaleDB compression","Betere grafiekkwaliteit","Snellere alerts"],c:[1],h:"Compressie = minder opslagruimte voor dezelfde historische data. TimescaleDB kan 90%+ comprimeren."},
+{type:"mc",q:"Wat is een 'Zabbix item value type'?",o:["Het type monitoring item","Het datatype van de waarde die een item opslaat: numeriek (float/integer), string, tekst, log","Een type trigger","Een type actie"],c:[1],h:"Value type = hoe de data opgeslagen wordt. Getallen als float/integer; tekst als character/text; logs apart."},
+{type:"mc",q:"Wat is de standaard poort van de Zabbix web-interface?",o:["8080","80 (HTTP) of 443 (HTTPS) — afhankelijk van de webserverconfiguratie","3000","8443"],c:[1],h:"Zabbix web draait op Apache/Nginx — standaard poort 80 of 443 voor HTTPS."},
+{type:"mc",q:"Wat is een 'Zabbix alert script'?",o:["Een interne script","Een extern script dat Zabbix oproept als notificatie-methode — nuttig voor aangepaste alertkanalen","Een type back-up script","Een type discovery script"],c:[1],h:"Alert scripts = custom notificaties. Bijv. een script dat een ticket aanmaakt in Jira bij een alert."},
+{type:"mc",q:"Wat is de purpose van 'item units' in Zabbix?",o:["De frequentie van monitoring","De meeteenheid die weergegeven wordt bij een item-waarde (bijv. bytes, %, req/s) — maakt grafieken begrijpelijker","Een type trigger-drempel","Een type berekening"],c:[1],h:"Units = context. 8589934592 bytes → 8 GB. Zabbix kan automatisch eenheden converteren."},
+{type:"mc",q:"Wat is het verschil tussen een 'check_period' en 'update_interval' in Zabbix?",o:["Ze zijn identiek","update_interval = hoe vaak het item uitgelezen wordt; check_period = de periode waarbinnen het item actief is (bijv. enkel tijdens kantooruren)","check_period bepaalt de frequentie","update_interval bepaalt wanneer gemonitord wordt"],c:[1],h:"Je kunt items beperken tot bepaalde tijdvensters — bijv. een item enkel 's nachts actief."},
+{type:"mc",q:"Wat is 'Zabbix network discovery' vs 'agent auto-registration'?",o:["Ze zijn identiek","Network discovery = Zabbix scant actief IP-bereiken; auto-registration = agents melden zich zelf aan bij de server","Auto-registration is uitgebreider","Network discovery vereist een agent"],c:[1],h:"Discovery = pull (Zabbix zoekt). Auto-registration = push (agent meldt zich). Verschillende use cases."},
+{type:"mc",q:"Wat is een 'Zabbix script' (global script)?",o:["Een type alertscript","Een script dat vanuit de Zabbix-interface handmatig uitgevoerd kan worden op een host — bijv. ping, traceroute, service restart","Een type back-up","Een type LLD"],c:[1],h:"Global scripts = on-demand acties. Rechtermuisklik op een host → voer script uit op die host."},
+{type:"mc",q:"Wat is de maximale lengte van een SNMP community string?",o:["8 tekens","16 tekens","127 tekens — maar korter is gebruikelijker","Onbeperkt"],c:[2],h:"Technisch 127 tekens, maar gebruik een sterke willekeurige string. 'public' is absoluut te vermijden."},
+{type:"mc",q:"Wat is 'rate limiting' in de context van Zabbix API?",o:["Beperking van item-waarden","Beperking van het aantal API-verzoeken per tijdseenheid om overbelasting van de Zabbix-server te voorkomen","Een type trigger","Een type actie"],c:[1],h:"API rate limiting = bescherm de server tegen te veel gelijktijdige API-calls van externe scripts."},
+{type:"mc",q:"Welk protocol gebruikt Zabbix voor communicatie met de Java Gateway?",o:["SNMP","JMX over TCP (poort 10052 standaard)","HTTP REST","SOAP"],c:[1],h:"Java Gateway luistert op TCP poort 10052. Zabbix server communiceert via dit kanaal met JMX-bronnen."},
+{type:"mc",q:"Wat is de purpose van 'Zabbix frontend' configuratiebestand?",o:["Monitoring-instellingen","De configuratie van de web-interface (database-verbinding, Zabbix-server adres) — zconf.php of zabbix.conf.php","Agent-instellingen","Template-instellingen"],c:[1],h:"De frontend config verbindt de web-UI met de database en Zabbix-server."},
+{type:"mc",q:"Wat is 'Zabbix keepalive' voor agents?",o:["Een type back-up","De instelling die bepaalt hoe lang een TCP-verbinding open blijft tussen active agent en server — vermindert overhead","Een type trigger","Een type macro"],c:[1],h:"Keepalive = verbinding open houden. Minder TCP-handshakes = efficiënter voor actieve agents."},
+{type:"mc",q:"Welke informatie bevat een syslog-bericht? (RFC 5424 formaat)",o:["Enkel de boodschap","Prioriteit (facility+severity), versie, timestamp, hostname, applicatienaam, process-ID, message-ID en de boodschap","Enkel timestamp en boodschap","Enkel severity en boodschap"],c:[1],h:"RFC 5424 syslog = gestandaardiseerd en rijk format met veel metadata naast de eigenlijke boodschap."},
+{type:"mc",q:"Wat is facility in syslog?",o:["De ernst van het bericht","Een code die de bron of categorie van het bericht aangeeft (bijv. kern=kernel, auth=authenticatie, mail=mailserver)","De timestamp","De hostname van de afzender"],c:[1],h:"Facility = welk subsysteem genereert dit bericht? kern(0) voor kernel, user(1) voor gebruikersmeldingen."},
+{type:"mc",q:"Wat is de 'severity' in syslog?",o:["De bron van het bericht","Het ernstniveau: 0=Emergency tot 7=Debug — hoe lager het getal, hoe ernstiger","De tijdstempel","De hostname"],c:[1],h:"Syslog severity: 0=Emergency, 1=Alert, 2=Critical, 3=Error, 4=Warning, 5=Notice, 6=Info, 7=Debug."},
+{type:"open",q:"Welk Linux-commando gebruik je om realtime de laatste regels van een logbestand te volgen?",ans:["tail -f","tail"],h:"Het commando werkt met de optie -f voor 'follow'."},
+{type:"mc",q:"Wat is 'log parsing' in de context van monitoring?",o:["Logbestanden comprimeren","Het gestructureerd analyseren van logberichten om relevante informatie te extraheren voor monitoring en alerting","Logbestanden verwijderen","Logbestanden overbrengen"],c:[1],h:"Log parsing = ruwe tekst omzetten in bruikbare data. Bijv. extraheer HTTP-statuscodes uit access logs."},
+{type:"mc",q:"Wat is Graylog?",o:["Een type firewall","Een open-source log management en SIEM platform voor het centraal verzamelen, zoeken en analyseren van logdata","Een type Zabbix-plugin","Een type back-upoplossing"],c:[1],h:"Graylog = gecentraliseerd log management. Alternatief voor ELK stack (Elasticsearch, Logstash, Kibana)."},
+{type:"mc",q:"Wat is de ELK-stack?",o:["Een type netwerk","Elasticsearch (opslag/search) + Logstash (verwerking) + Kibana (visualisatie) — populaire stack voor log analytics","Een type firewall","Een type monitoring"],c:[1],h:"ELK = de log analytics driehoek. Logstash verwerkt, Elasticsearch slaat op, Kibana visualiseert."},
+{type:"mc",q:"Wat is Prometheus in relatie tot monitoring?",o:["Een type database","Een open-source monitoring systeem en tijdreeksdatabase, populair voor Kubernetes/cloud monitoring","Een type Zabbix-alternatief enkel","Een type log manager"],c:[1],h:"Prometheus = pull-based monitoring. Verzamelt metrics via HTTP scraping. Vaak gecombineerd met Grafana."},
+{type:"mc",q:"Wat is een 'exporter' in Prometheus-context?",o:["Een export functie","Een service die metrics verzamelt van een applicatie en blootstelt in Prometheus-formaat (bijv. node_exporter, mysqld_exporter)","Een type back-up","Een type alert"],c:[1],h:"Exporters = Prometheus-compatibele metric-bronnen. Node exporter = systeemmetrics, mysqld exporter = database."},
+{type:"mc",q:"Wat is Alertmanager in het Prometheus-ecosysteem?",o:["Een type dashboard","Een component die alerts van Prometheus ontvangt, dedupliceert, groepeert en doorstuurt naar notificatiekanalen","Een type exporter","Een type database"],c:[1],h:"Alertmanager = het alertverwerkingscomponent. Zorgt voor deduplicatie en routing van Prometheus-alerts."},
+{type:"mc",q:"Wat is InfluxDB in relatie tot monitoring?",o:["Een type firewall","Een tijdreeksdatabase geoptimaliseerd voor monitoring-metrics — vaak gecombineerd met Grafana en Telegraf","Een type log manager","Een type Zabbix-alternatief"],c:[1],h:"InfluxDB + Telegraf + Grafana = de TIG-stack. Alternatief voor Prometheus voor tijdreeksdata."},
+{type:"mc",q:"Wat is 'metric cardinality' en waarom is het een probleem?",o:["De kwaliteit van metrics","Het aantal unieke combinaties van labels/tags voor een metric — hoge cardinality explodeert de opslagruimte en query-tijd","De nauwkeurigheid van metingen","De frequentie van metrics"],c:[1],h:"Hoge cardinality = miljarden unieke tijdreeksen. Bijv. elke HTTP-request als aparte metric = onschaalbaar."},
+{type:"mc",q:"Wat is 'scrape interval' in Prometheus?",o:["De bewaartermijn voor data","Hoe vaak Prometheus metrics ophaalt bij een exporter — standaard 15 seconden","De timeout voor scrapes","Het maximale aantal targets"],c:[1],h:"Scrape interval = polling frequentie. 15s is standaard; verlaag voor kritieke systemen, verhoog voor minder belangrijke."},
+{type:"mc",q:"Wat is PromQL?",o:["Een type SQL voor databases","De querytaal van Prometheus voor het bevragen en berekenen van tijdreeksdata","Een type dashboard-configuratie","Een type alert-syntaxis"],c:[1],h:"PromQL = Prometheus Query Language. Krachtig maar anders dan SQL — tijdreeksgeoriënteerd."},
+{type:"mc",q:"Wat is het verschil tussen 'push' en 'pull' monitoring?",o:["Ze zijn identiek","Pull = monitoring systeem haalt actief data op (Zabbix passive, Prometheus); Push = bronnen sturen data naar het monitoring systeem (Zabbix active, SNMP traps)","Push is altijd veiliger","Pull vereist meer bandbreedte"],c:[1],h:"Pull = Zabbix/Prometheus vraagt. Push = bron verstuurt. Elk heeft voor- en nadelen bij firewalls."},
+{type:"mc",q:"Wat is 'service discovery' in monitoring?",o:["Het detecteren van netwerkdiensten","Het automatisch ontdekken en toevoegen van te monitoren targets zonder manuele configuratie — bijv. Prometheus met Kubernetes","Een type SNMP-discovery","Een type Zabbix LLD"],c:[1],h:"Service discovery = automatisch bijhouden van dynamische infrastructuren. Essentieel in cloud/containers."},
+{type:"mc",q:"Wat is container monitoring en waarom verschilt het van traditionele servermonitoring?",o:["Er is geen verschil","Containers zijn vluchtig (ephemeral) en dynamisch — traditionele agentinstallatie werkt niet. Monitoring moet adaptief zijn aan het container-lifecycle","Containers zijn eenvoudiger te monitoren","Container monitoring vereist SNMP"],c:[1],h:"Containers starten en stoppen snel. Statische monitoring-configs werken niet — service discovery is vereist."},
+{type:"mc",q:"Wat is 'log aggregation' en waarom is het belangrijk?",o:["Het samenvoegen van logbestanden op één server voor archief","Het centraliseren van logs van alle systemen op één platform voor correlatie, analyse en doorzoekbaarheid","Het comprimeren van logs","Het verwijderen van oude logs"],c:[1],h:"Log aggregation = alle logs op één plek. Eén incident = logs op 10 servers. Centraal zoeken = tijdwinst."},
+{type:"mc",q:"Wat is 'structured logging'?",o:["Het opslaan van logs in bestanden","Het schrijven van logs in een gestructureerd formaat (bijv. JSON) zodat ze makkelijker te parsen en doorzoeken zijn","Het versleutelen van logs","Het roteren van logs"],c:[1],h:"Structured = JSON of key-value. Machine-leesbaar. Veel eenvoudiger te doorzoeken dan vrije tekst."},
+{type:"mc",q:"Wat is 'log shipping'?",o:["Het fysiek verplaatsen van logmedia","Het automatisch doorsturen van logs van productiemachines naar een centrale log-aggregatieoplossing","Het back-uppen van logs","Het versleutelen van logs voor transport"],c:[1],h:"Log shipping = logs van A naar B sturen. Tools: Filebeat, Logstash, rsyslog met remote target."},
+{type:"mc",q:"Wat is de role van Filebeat in de ELK-stack?",o:["Het analyseren van logs","Een lichtgewicht log-shipper die logbestanden monitort en naar Logstash of Elasticsearch stuurt","Een type database","Een type dashboard"],c:[1],h:"Filebeat = de log-verzamelaar op het bronmachine. Lichtgewicht, betrouwbaar, met backpressure support."},
+{type:"mc",q:"Wat is 'log retention compliance'?",o:["Het technisch bewaren van logs","Het naleven van wettelijke en beleidsmatige vereisten voor hoe lang bepaalde logs bewaard moeten worden","Het automatisch verwijderen van logs","Het versleutelen van gearchiveerde logs"],c:[1],h:"Bijv. GDPR, NIS2 of sector-specifieke regels kunnen minimale bewaartermijnen voor security logs opleggen."},
+{type:"mc",q:"Wat is een 'correlation rule' in SIEM?",o:["Een type SQL-query","Een regel die meerdere events uit verschillende bronnen combineert om complexe aanvalspatronen te detecteren die individuele events zouden missen","Een type alert","Een type log filter"],c:[1],h:"Bijv. 5 mislukte logins + 1 succesvolle login vanuit hetzelfde IP = brute-force detectie."},
+{type:"mc",q:"Wat is 'false positive' in de context van monitoring en alerting?",o:["Een succesvolle aanval","Een alert gegenereerd voor iets dat geen echt probleem is — veroorzaakt alert fatigue","Een gemiste aanval","Een type trigger"],c:[1],h:"False positive = loos alarm. Te veel false positives → beheerders negeren alle alerts → gevaarlijk."},
+{type:"mc",q:"Wat is 'alert fatigue'?",o:["Vermoeidheid door te veel werken","Het fenomeen waarbij beheerders alerts beginnen te negeren vanwege een te hoge frequentie van meldingen, inclusief valse positieven","Een type monitoring probleem","Een type Zabbix configuratie"],c:[1],h:"Alert fatigue = de wolf die roept. Teveel alerts → beheerder negeert ze → echte alert gemist."},
+{type:"mc",q:"Wat is 'anomaly detection' in monitoring?",o:["Het detecteren van netwerkanomalieen","Het automatisch detecteren van afwijkingen van normale gedragspatronen via statistische of ML-methoden","Een type threshold alert","Een type SNMP discovery"],c:[1],h:"Anomaly detection = geen vaste drempel maar dynamische baseline. Detecteert ongewone patronen."},
+{type:"mc",q:"Wat is de 'cardinality' van een metric label?",o:["Het gewicht van de metric","Het aantal unieke waarden dat een label kan aannemen — hoge cardinality belast de tijdreeksdatabase","De frequentie van de metric","De nauwkeurigheid van de metric"],c:[1],h:"Laag cardinality = goed (bijv. status: ok/error). Hoog cardinality = slecht (bijv. user_id als label)."},
+{type:"mc",q:"Wat is 'Golden Signals' monitoring (Google SRE)?",o:["Een type dashboard","Vier key metrics: Latency, Traffic, Errors, Saturation — de minimale set voor effectieve service monitoring","Een type alert","Een type SLA"],c:[1],h:"Golden Signals = de vier essentiële metrics voor elke service. Simpel maar krachtig."},
+{type:"mc",q:"Wat is 'USE method' voor monitoring?",o:["Een type gebruiksmonitoring","Utilization, Saturation, Errors — een methodologie voor het analyseren van resource performance problemen","Een type alertmethode","Een type SLA methode"],c:[1],h:"USE method door Brendan Gregg. Utilization = hoe druk? Saturation = wachtrij? Errors = fouten?"},
+{type:"mc",q:"Wat is 'RED method' voor service monitoring?",o:["Een type alertkleur","Rate, Errors, Duration — focus op request-gebaseerde metrics voor microservices monitoring","Een type dashboard","Een type SLA"],c:[1],h:"RED = hoe snel behandel je verzoeken (rate), hoeveel gaan fout (errors), hoe lang duurt het (duration)?"},
+{type:"mc",q:"Wat is een 'runbook' in het kader van incident response?",o:["Een type logboek","Een gedocumenteerde stap-voor-stap procedure voor het afhandelen van specifieke incidenten — hoe herstel je service X?","Een type back-up","Een type monitoring configuratie"],c:[1],h:"Runbook = procedures voor ops. 2u 's nachts, dienst is neer, wat doe je? Het runbook vertelt je."},
+{type:"mc",q:"Wat is MTTR en hoe beïnvloedt monitoring het?",o:["Maximum Time To Restore","Mean Time To Repair — goede monitoring verlaagt MTTR door snellere detectie en betere diagnose-informatie","Minimum Time To Recover","Monthly Time to Repair"],c:[1],h:"Snelle detectie + goede diagnoseinformatie (logs, metrics) = kortere herstelijd. Monitoring = lagere MTTR."},
+{type:"mc",q:"Wat is 'SLI' (Service Level Indicator)?",o:["Een type SLA","Een specifieke meetwaarde die de kwaliteit van een service uitdrukt (bijv. beschikbaarheid als % van succesvolle requests)","Een type alert","Een type KPI voor HR"],c:[1],h:"SLI = de maat voor servicekwaliteit. SLO = de target voor die maat. SLA = de contractuele afspraak."},
+{type:"mc",q:"Wat is 'SLO' (Service Level Objective)?",o:["Een type SLA","De interne doelstelling voor een SLI — bijv. 99,9% beschikbaarheid — nog geen contractuele verplichting","Een type KPI","Een type monitoring threshold"],c:[1],h:"SLO = intern doel. Als je SLO faalt, krijgt de klant het misschien nog niet te voelen. SLA-falen wel."},
+{type:"mc",q:"Wat is een 'error budget' in SRE?",o:["Een budget voor foutoplossing","Het maximale aantal fouten of downtime toegestaan binnen een tijdsperiode op basis van de SLO — bijv. 0,1% van de tijd offline","Een type financieel budget","Een type alert"],c:[1],h:"Error budget = 100% - SLO. Bij 99,9% SLO = 0,1% downtime budget = 8,76u/jaar. Opgebruikt? Geen deployments."},
+{type:"mc",q:"Waarom is het belangrijk om monitoring zelf te monitoren?",o:["Het is niet nodig","Als het monitoring systeem zelf uitvalt, detecteer je geen problemen meer — monitor de beschikbaarheid van Zabbix/Prometheus/etc.","Monitoring monitort zichzelf automatisch","Alleen grote bedrijven moeten dit doen"],c:[1],h:"Quis custodiet ipsos custodes? Wie bewaakt de wachter? Zabbix neer = blind. Monitor je monitoring."},
+{type:"mc",q:"Wat is 'topology discovery' in Zabbix?",o:["Een type netwerkscan","Het automatisch ontdekken van de netwerktopologie en relaties tussen hosts voor de network map","Een type LLD","Een type template"],c:[1],h:"Topology discovery = wie is verbonden met wie? Maakt automatische netwerkmaps mogelijk."},
+{type:"mc",q:"Wat is een 'Zabbix problem tag'?",o:["Een type trigger tag","Een label gekoppeld aan een probleem voor filtering, correlatie en routing van acties","Een type host tag","Een type item tag"],c:[1],h:"Problem tags = organiseer problemen. Route alerts op basis van tags naar het juiste team."},
+{type:"mc",q:"Wat is 'capacity planning' en hoe helpt monitoring?",o:["Het plannen van serverruimte","Het voorspellen van toekomstige resourcebehoeften op basis van trends in historische monitoring-data","Een type audit","Een type back-up"],c:[1],h:"Trend data + groeipercentage = capaciteitsplanning. Wanneer heb ik meer schijfruimte/RAM/CPU nodig?"},
+{type:"mc",q:"Wat is 'on-call rotation' in een monitoring context?",o:["Roterend schema waarbij beheerders om beurt verantwoordelijk zijn voor het reageren op kritieke alerts buiten de kantooruren","Een type monitoring software","Een type alertfilter","Een type SLA"],c:[0],h:"On-call = wie is vannacht verantwoordelijk? Zabbix kan de juiste persoon alerteren op basis van schema."},
+{type:"mc",q:"Wat is een postmortem rapport na een incident?",o:["Een type audit rapport","Een analyse na een incident die de oorzaak, tijdlijn, impact en verbeteracties documenteert — blameless culture","Een type back-up rapport","Een type monitoring rapport"],c:[1],h:"Postmortem = leer van incidenten. Blameless = focus op systemen/processen, niet op schuldige personen."},
+{type:"mc",q:"Wat is 'mean time between failures' (MTBF) en hoe meet je het?",o:["Hoe lang herstel duurt","De gemiddelde tijdsduur tussen twee storingen — meet door alle uptime-periodes te middelen","De maximale uptime","De minimale downtime"],c:[1],h:"MTBF = betrouwbaarheidsmaatstaf. Hogere MTBF = minder frequent uitvallen = betrouwbaarder systeem."},
+{type:"mc",q:"Waarom bewaar je monitoring-data over langere periodes?",o:["Om compliance te bewijzen","Voor trend-analyse, capaciteitsplanning, SLA-rapportage en vergelijking met historische situaties","Om GDPR te bewijzen","Om back-ups te valideren"],c:[1],h:"Historische data = context. Hoe presteerde de server een jaar geleden? Trend naar beneden of boven?"},
+{type:"mc",q:"Wat is een 'Zabbix data collector'?",o:["Een type agent","Elk component dat data verzamelt voor Zabbix: agent, SNMP, IPMI, HTTP agent, external check, database monitor","Een type proxy","Een type template"],c:[1],h:"Zabbix ondersteunt vele data-collectiemethodes. Kies de methode die past bij het te monitoren systeem."},
+{type:"mc",q:"Wat is 'performance baseline' in monitoring?",o:["Een minimale drempelwaarde","De gedocumenteerde normale prestatieniveaus van een systeem waartegen afwijkingen gemeten worden","Een type trigger","Een type SLA"],c:[1],h:"Baseline = wat is normaal? Zonder baseline weet je niet wat abnormaal is. Verzamel data, analyseer trends."},
+{type:"mc",q:"Wat is het doel van een 'monitoring maturity model'?",o:["Een type certificering","Een framework dat organisaties helpt te begrijpen waar ze staan in hun monitoring-volwassenheid en hoe ze kunnen verbeteren","Een type monitoring software","Een type SLA framework"],c:[1],h:"Van reactief (gebruiker belt) → proactief (alert voor impact) → predictief (probleem voor het optreedt)."},
+{type:"mc",q:"Wat is 'synthetic monitoring'?",o:["Monitoring via nep data","Het simuleren van gebruikersinteracties met een applicatie vanuit externe locaties om beschikbaarheid en performance te meten","Een type log monitoring","Een type SNMP monitoring"],c:[1],h:"Synthetic = simuleer gebruikers van buiten. Test of je website bereikbaar en snel is vanuit verschillende locaties."},
+{type:"mc",q:"Wat is 'real user monitoring' (RUM)?",o:["Monitoring door echte beheerders","Het meten van de werkelijke ervaringen van echte gebruikers met een applicatie — performantie vanuit de browser","Een type synthetic monitoring","Een type log monitoring"],c:[1],h:"RUM = echte gebruikerservaringen meten. Browser stuurt performantiedata naar de monitoring server."},
+];
+
+
+// ── CONFIG ──────────────────────────────────────────
+const cfg = {
+  count: sessionStorage.getItem('cfg-count') || '50',
+  order: sessionStorage.getItem('cfg-order') || 'shuffle',
+  types: sessionStorage.getItem('cfg-types') || 'all',
+};
+
+// ── INIT ────────────────────────────────────────────
+const POOL = window.QUESTIONS_auditing || [];
+let questions = [...POOL];
+if (cfg.types !== 'all') questions = questions.filter(q => q.type === cfg.types);
+if (cfg.order === 'shuffle') questions = questions.sort(() => Math.random() - 0.5);
+if (cfg.count !== 'all') questions = questions.slice(0, parseInt(cfg.count));
+
+let idx = 0, correct = 0, wrong = 0, sel = new Set();
+
+function updateStats() {
+  const done = idx, total = questions.length, left = total - done;
+  const pct = done > 0 ? Math.round(correct / done * 100) : null;
+  document.getElementById('sv-score').textContent = correct;
+  document.getElementById('sv-wrong').textContent = wrong;
+  document.getElementById('sv-left').textContent = left;
+  document.getElementById('sv-pct').textContent = pct !== null ? pct + '%' : '—';
+  document.getElementById('prog').style.width = (done / total * 100) + '%';
+  document.getElementById('prog-txt').textContent = `Vraag ${Math.min(idx+1,total)} / ${total}`;
+}
+
+function renderQ() {
+  sel = new Set();
+  const q = questions[idx];
+  const letters = ['A','B','C','D','E','F'];
+
+  let body = '';
+  if (q.type === 'open') {
+    body = `<textarea class="open-inp" id="oa" rows="2" placeholder="Typ je antwoord hier…" oninput="onOI()"></textarea>`;
+  } else {
+    body = `<div class="opts">${q.o.map((o,i) => `<div class="opt" id="o${i}" onclick="tog(${i})"><div class="opt-box" id="b${i}"></div><span class="opt-letter">${letters[i]}</span><span class="opt-text">${o}</span></div>`).join('')}</div>`;
+  }
+
+  const tb = q.type === 'multi' ? `<span class="q-tbadge tb-multi">◈ Meerdere antwoorden</span>`
+           : q.type === 'open'  ? `<span class="q-tbadge tb-open">✏ Open vraag</span>` : '';
+
+  document.getElementById('q-container').innerHTML = `
+    <div class="q-card">
+      <div class="q-meta">
+        <span class="q-num">V${idx+1}</span>
+        <span class="q-sub">${q.t}</span>
+        ${tb}
+      </div>
+      <div class="q-text">${q.q}</div>
+      ${body}
+      <button class="hint-btn" id="hint-btn" onclick="toggleHint()">💡 Hint</button>
+      <div class="hint-box" id="hint-box">${q.h}</div>
+      <div class="feedback" id="fb"></div>
+    </div>`;
+
+  const bc = document.getElementById('btn-check');
+  bc.disabled = true;
+  bc.classList.remove('hidden');
+  document.getElementById('btn-next').classList.add('hidden');
+  document.getElementById('btn-skip').classList.remove('hidden');
+
+  if (q.type === 'open') {
+    document.getElementById('oa').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!bc.disabled) check(); }
+    });
+  }
+}
+
+function onOI() {
+  document.getElementById('btn-check').disabled = !document.getElementById('oa').value.trim();
+}
+
+function toggleHint() {
+  const hb = document.getElementById('hint-box');
+  hb.classList.toggle('show');
+  document.getElementById('hint-btn').textContent = hb.classList.contains('show') ? '💡 Hint verbergen' : '💡 Hint';
+}
+
+function tog(i) {
+  const q = questions[idx];
+  if (document.getElementById('o'+i)?.classList.contains('locked')) return;
+  if (q.type === 'mc') {
+    sel.forEach(s => { document.getElementById('o'+s)?.classList.remove('sel'); const b=document.getElementById('b'+s); if(b) b.innerHTML=''; });
+    sel.clear();
+  }
+  if (sel.has(i)) {
+    sel.delete(i);
+    document.getElementById('o'+i).classList.remove('sel');
+    document.getElementById('b'+i).innerHTML = '';
+  } else {
+    sel.add(i);
+    document.getElementById('o'+i).classList.add('sel');
+    document.getElementById('b'+i).innerHTML = '✓';
+  }
+  document.getElementById('btn-check').disabled = sel.size === 0;
+}
+
+function check() {
+  const q = questions[idx];
+  let ok = false;
+
+  if (q.type === 'open') {
+    const raw = document.getElementById('oa').value.trim().toLowerCase();
+    const acc = (q.ans||[]).map(a=>a.toLowerCase());
+    ok = acc.some(a => raw===a || raw.includes(a) || a.includes(raw));
+    const ta = document.getElementById('oa');
+    ta.classList.add(ok?'ok':'bad');
+    ta.disabled = true;
+  } else {
+    const s=[...sel], cor=q.c;
+    q.o.forEach((_,i)=>document.getElementById('o'+i)?.classList.add('locked'));
+    q.o.forEach((_,i)=>{
+      const el=document.getElementById('o'+i),bx=document.getElementById('b'+i);
+      if(!el) return;
+      el.classList.remove('sel');
+      if(s.includes(i)&&cor.includes(i)){el.classList.add('ok');if(bx)bx.innerHTML='✓';}
+      else if(s.includes(i)&&!cor.includes(i)){el.classList.add('bad');if(bx)bx.innerHTML='✗';}
+      else if(!s.includes(i)&&cor.includes(i)){el.classList.add('missed');if(bx)bx.innerHTML='!';}
+    });
+    ok = cor.every(c=>s.includes(c))&&s.every(sv=>cor.includes(sv));
+  }
+
+  if(ok) correct++; else wrong++;
+  updateStats();
+
+  const fb=document.getElementById('fb');
+  fb.className='feedback show '+(ok?'fb-ok':'fb-bad');
+  fb.innerHTML=(ok?'✅ <strong>Correct!</strong> ':'❌ <strong>Fout.</strong> ')+q.f;
+
+  document.getElementById('btn-check').classList.add('hidden');
+  document.getElementById('btn-skip').classList.add('hidden');
+  const bn=document.getElementById('btn-next');
+  bn.classList.remove('hidden');
+  bn.textContent = idx>=questions.length-1 ? 'Resultaten →' : 'Volgende →';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function skipQ() { wrong++; updateStats(); advance(); }
+function nextQ() { advance(); }
+function advance() {
+  idx++;
+  if(idx>=questions.length){showScore();return;}
+  renderQ();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function showScore() {
+  const total=questions.length, pct=Math.round(correct/total*100);
+  const msg = pct>=85?'🏆 Uitstekend! Je beheerst de leerstof.':pct>=70?'👍 Goed gedaan! Nog wat herhaling.':pct>=55?'📚 Voldoende — extra studie aangeraden.':'💡 Herhaal de cursus en probeer opnieuw.';
+  document.getElementById('quiz-screen').style.display='none';
+  const sc=document.getElementById('score-screen');
+  sc.style.display='block';
+  sc.innerHTML=`
+    <div class="sc-badge">📊 Auditing & Monitoring</div>
+    <div class="sc-pct">${pct}%</div>
+    <div class="sc-msg">${msg}</div>
+    <div class="sc-grid">
+      <div class="sc-item"><span class="sc-num" style="color:var(--correct)">${correct}</span><span class="sc-lbl">Correct</span></div>
+      <div class="sc-item"><span class="sc-num" style="color:var(--wrong)">${wrong}</span><span class="sc-lbl">Fout / Over</span></div>
+      <div class="sc-item"><span class="sc-num" style="color:var(--muted2)">${total}</span><span class="sc-lbl">Totaal</span></div>
+    </div>
+    <div class="sc-btns">
+      <a class="btn-home" href="index.html">← Andere module</a>
+      <button class="btn-retry" onclick="location.reload()">↺ Opnieuw</button>
+    </div>`;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// Start
+updateStats();
+renderQ();
+</script>
+</body>
+</html>
