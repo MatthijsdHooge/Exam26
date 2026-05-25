@@ -150,5 +150,12 @@ function saveConfig() {
   if (v) { const el = document.getElementById('cfg-' + k); if(el) el.value = v; }
 });
 </script>
+<section style="max-width: 1100px; margin: 40px auto; padding: 20px; border-top: 1px solid var(--border);">
+  <h2 style="font-family: 'IBM Plex Mono', monospace; font-size: 0.9rem; margin-bottom: 10px; color: var(--muted2);">Changelog</h2>
+  <ul style="list-style: none; color: var(--muted); font-size: 0.85rem; line-height: 1.8;">
+    <li><span style="color: var(--cyan);">[2026-05-25]</span> Initial release of the AP Quiz Platform interface.</li>
+    <li><span style="color: var(--cyan);">[2026-05-25]</span> Implemented SessionStorage for persistent user preferences.</li>
+  </ul>
+</section>
 </body>
 </html>
